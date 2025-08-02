@@ -1,0 +1,99 @@
+# WISME RESEARCH DEMO - ELEVENLABS STUDIO SCRIPTS
+# Complete Organized Index of All Learning Journey Episodes
+
+## 📁 COMPLETE FILE STRUCTURE
+
+### 🔸 DSA_EPISODES_1_5_COMPLETE.txt
+**Series:** Data Structures & Algorithms Fundamentals  
+**Host:** Maya (Curious, Engaging) | **Expert:** Kai (Knowledgeable, Patient)  
+**Episodes:** 5 complete episodes (7-9 minutes each)
+1. Big O Notation & Complexity Analysis
+2. Arrays & Array Operations  
+3. Linked Lists Deep Dive
+4. Stacks & Queues - LIFO vs FIFO
+5. Recursion & Base Cases
+
+### 🔸 SCIENCE_MYSTERIES_EPISODES_1_5_COMPLETE.txt
+**Series:** Curious Universe - Science Mysteries & Discoveries  
+**Host:** Maya (Curious, Wonder-struck) | **Expert:** Dr. Nova (Science Communicator, Passionate)  
+**Episodes:** 5 complete episodes (7-9 minutes each)
+1. Quantum Physics for Everyone
+2. Black Holes & Space-Time Mysteries
+3. Ocean Mysteries & Deep Sea Discoveries
+4. The Human Brain's Hidden Powers
+5. Evolution's Greatest Mysteries
+
+### 🔸 PSYCHOLOGY_EPISODES_1_5_COMPLETE.txt
+**Series:** Why We Do What We Do - Psychology & Human Behavior  
+**Host:** Maya (Curious, Self-reflective) | **Expert:** Dr. Alex (Behavioral Psychologist, Insightful)  
+**Episodes:** 5 complete episodes (7-9 minutes each)
+1. Why We Make Bad Decisions
+2. The Procrastination Puzzle
+3. Why We Believe What We Want to Believe
+4. The Psychology of Relationships
+5. The Science of Habits & Change
+
+### 🔸 PERSONAL_FINANCE_EPISODES_1_6_COMPLETE.txt
+**Series:** Finance Fundamentals  
+**Host:** Riley (Practical, Risk-aware) | **Expert:** Alex (Financial Advisor, Patient)  
+**Episodes:** 6 complete episodes (7-9 minutes each)
+1. Emergency Funds & Budgeting Basics
+2. Debt Management & Credit Scores
+3. Investment Basics & Risk Assessment
+4. Retirement Planning & 401k Strategies
+5. Insurance & Risk Management
+6. Tax Strategies & Year-End Planning
+
+---
+
+## 📊 SERIES STATISTICS
+
+- **Total Episodes:** 21 complete conversational scripts
+- **Total Series:** 4 comprehensive learning journeys
+- **Format:** Two-person host + expert natural conversations
+- **Duration:** Each episode optimized for 7-9 minutes (1050-1450 words)
+- **Style:** Conversational with natural speech patterns (*thinking*, *excited*, etc.)
+- **Target:** Diverse audience engagement across science, psychology, tech, and finance
+
+---
+
+## 🎯 HOST PERSONALITIES
+
+- **Maya** (DSA, Science, Psychology): Curious learner, asks clarifying questions, relates concepts to everyday examples, shows wonder and genuine engagement
+- **Riley** (Finance): Practical decision-maker, risk-aware, focuses on actionable advice
+
+---
+
+## 👥 EXPERT PERSONALITIES
+
+- **Kai** (DSA): Patient teacher, uses analogies, emphasizes building intuition over memorization
+- **Dr. Nova** (Science): Science communicator, passionate about wonder and discovery, makes complex topics accessible
+- **Dr. Alex** (Psychology): Behavioral psychologist, insightful and empathetic, helps people understand themselves
+- **Alex** (Finance): Financial advisor, patient educator, focuses on sustainable strategies and psychological aspects
+
+---
+
+## 🎬 ELEVENLABS STUDIO READY
+
+All scripts formatted for optimal text-to-speech generation:
+- Natural conversation flow with emotional markers
+- Proper pacing indicators (*pause*, *thinking*)
+- Clear speaker identification
+- Optimal length for engagement (7-9 minutes)
+- Educational content that builds progressively
+- Real-world examples and analogies throughout
+
+---
+
+## 📈 LEARNING PROGRESSION
+
+Each series builds from foundational concepts to advanced applications:
+- **DSA:** Algorithm thinking → Data structures → Problem solving patterns
+- **Science:** Quantum basics → Space mysteries → Ocean/brain/evolution discoveries  
+- **Psychology:** Decision-making → Habits → Beliefs → Relationships → Change
+- **Finance:** Basic budgeting → Investment strategy → Comprehensive planning
+
+---
+
+**Status:** ✅ ALL 21 EPISODES COMPLETE AND READY FOR PRODUCTION
+**Last Updated:** Current session - Updated to 4-series structure with Science Mysteries & Psychology replacing OS/DBMS

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "818908261826",
+    "project_id": "wismeresearchapp2",
+    "storage_bucket": "wismeresearchapp2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:818908261826:android:dd29c5b65e88993b547a5b",
+        "android_client_info": {
+          "package_name": "com.example.researchapp2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "818908261826-1nnr43dj8g0ccuf27jbie1okn3483gqt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUThMmVJSVmVNMgyM8jHf4S7JS-ly0dGM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "818908261826-1nnr43dj8g0ccuf27jbie1okn3483gqt.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "818908261826-576j7j20b66nt9bn2mrh4dvaag1mlm24.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.researchapp2"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

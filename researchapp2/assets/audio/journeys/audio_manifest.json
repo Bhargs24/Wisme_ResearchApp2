@@ -1,0 +1,204 @@
+{
+  "journeys": {
+    "data_structures_algorithms": {
+      "title": "Data Structures & Algorithms Fundamentals",
+      "category": "Computer Science",
+      "difficulty": "Intermediate",
+      "description": "Master fundamental data structures and algorithmic thinking",
+      "episodes": [
+        {
+          "id": "dsa_01",
+          "title": "Big O Notation & Complexity Analysis",
+          "audioPath": "assets/audio/learning_journeys/dsa/episode_1/audio.mp3",
+          "duration": "8:30",
+          "description": "Understanding time and space complexity with Big O notation",
+          "topics": ["Big O", "Time Complexity", "Space Complexity", "Algorithm Analysis"]
+        },
+        {
+          "id": "dsa_02", 
+          "title": "Arrays & Array Operations",
+          "audioPath": "assets/audio/learning_journeys/dsa/episode_2/audio.mp3",
+          "duration": "7:45",
+          "description": "Deep dive into array operations and memory management",
+          "topics": ["Arrays", "Memory Management", "Array Operations", "Dynamic Arrays"]
+        },
+        {
+          "id": "dsa_03",
+          "title": "Linked Lists Deep Dive",
+          "audioPath": "assets/audio/learning_journeys/dsa/episode_3/audio.mp3",
+          "duration": "8:15",
+          "description": "Understanding linked list structures and pointer manipulation",
+          "topics": ["Linked Lists", "Pointers", "Node Structures", "List Operations"]
+        },
+        {
+          "id": "dsa_04",
+          "title": "Stacks & Queues - LIFO vs FIFO",
+          "audioPath": "assets/audio/learning_journeys/dsa/episode_4/audio.mp3",
+          "duration": "9:00",
+          "description": "Building efficient stacks and queues with real-world applications",
+          "topics": ["Stacks", "Queues", "LIFO", "FIFO", "Implementation Patterns"]
+        },
+        {
+          "id": "dsa_05",
+          "title": "Recursion & Base Cases",
+          "audioPath": "assets/audio/learning_journeys/dsa/episode_5/audio.mp3",
+          "duration": "8:45",
+          "description": "Mastering recursive thinking and base case identification",
+          "topics": ["Recursion", "Base Cases", "Recursive Algorithms", "Problem Solving"]
+        }
+      ]
+    },
+    "psychology": {
+      "title": "Psychology & Human Behavior",
+      "category": "Psychology",
+      "difficulty": "Beginner",
+      "description": "Discover the fascinating world of human psychology and understand what drives our behavior",
+      "episodes": [
+        {
+          "id": "psy_01",
+          "title": "Understanding the Human Mind",
+          "audioPath": "assets/audio/learning_journeys/psychology/episode_1/audio.mp3",
+          "duration": "8:00",
+          "description": "Introduction to psychology and how our minds work",
+          "topics": ["Psychology Basics", "Cognitive Processes", "Mind-Body Connection", "Mental Health"]
+        },
+        {
+          "id": "psy_02",
+          "title": "Memory and Learning",
+          "audioPath": "assets/audio/learning_journeys/psychology/episode_2/audio.mp3",
+          "duration": "8:20",
+          "description": "How we form memories and learn new information",
+          "topics": ["Memory Formation", "Learning Styles", "Forgetting", "Memory Techniques"]
+        },
+        {
+          "id": "psy_03",
+          "title": "Emotions and Motivation",
+          "audioPath": "assets/audio/learning_journeys/psychology/episode_3/audio.mp3",
+          "duration": "7:50",
+          "description": "Understanding emotions and what motivates human behavior",
+          "topics": ["Emotional Intelligence", "Motivation Theory", "Habit Formation", "Behavioral Change"]
+        },
+        {
+          "id": "psy_04",
+          "title": "Social Psychology and Relationships",
+          "audioPath": "assets/audio/learning_journeys/psychology/episode_4/audio.mp3",
+          "duration": "8:10",
+          "description": "How we interact with others and form relationships",
+          "topics": ["Social Influence", "Group Dynamics", "Communication", "Relationship Psychology"]
+        },
+        {
+          "id": "psy_05",
+          "title": "Stress and Mental Wellness",
+          "audioPath": "assets/audio/learning_journeys/psychology/episode_5/audio.mp3",
+          "duration": "8:15",
+          "description": "Managing stress and maintaining mental health",
+          "topics": ["Stress Management", "Coping Strategies", "Mindfulness", "Mental Wellness"]
+        }
+      ]
+    },
+    "science_mysteries": {
+      "title": "Science Mysteries & Discoveries",
+      "category": "Science",
+      "difficulty": "Beginner",
+      "description": "Explore the fascinating mysteries of our universe and groundbreaking scientific discoveries",
+      "episodes": [
+        {
+          "id": "sci_01",
+          "title": "The Mysteries of the Universe",
+          "audioPath": "assets/audio/learning_journeys/science_mysteries/episode_1/audio.mp3",
+          "duration": "8:25",
+          "description": "Exploring the biggest questions about our universe",
+          "topics": ["Cosmology", "Black Holes", "Dark Matter", "Big Bang Theory"]
+        },
+        {
+          "id": "sci_02",
+          "title": "The Secrets of Life",
+          "audioPath": "assets/audio/learning_journeys/science_mysteries/episode_2/audio.mp3",
+          "duration": "7:55",
+          "description": "Understanding how life began and evolved on Earth",
+          "topics": ["Evolution", "DNA", "Origin of Life", "Biodiversity"]
+        },
+        {
+          "id": "sci_03",
+          "title": "Climate and Weather Phenomena",
+          "audioPath": "assets/audio/learning_journeys/science_mysteries/episode_3/audio.mp3",
+          "duration": "8:35",
+          "description": "Uncovering the science behind weather and climate patterns",
+          "topics": ["Climate Science", "Weather Systems", "Global Warming", "Natural Disasters"]
+        },
+        {
+          "id": "sci_04",
+          "title": "The Human Brain Mysteries",
+          "audioPath": "assets/audio/learning_journeys/science_mysteries/episode_4/audio.mp3",
+          "duration": "8:05",
+          "description": "Exploring the most complex organ in the known universe",
+          "topics": ["Neuroscience", "Consciousness", "Brain Function", "Neural Networks"]
+        },
+        {
+          "id": "sci_05",
+          "title": "Quantum Physics and Reality",
+          "audioPath": "assets/audio/learning_journeys/science_mysteries/episode_5/audio.mp3",
+          "duration": "7:20",
+          "description": "Understanding the strange world of quantum mechanics",
+          "topics": ["Quantum Physics", "Wave-Particle Duality", "Quantum Entanglement", "Reality"]
+        }
+      ]
+    },
+    "personal_finance": {
+      "title": "Personal Finance Mastery",
+      "category": "Life Skills",
+      "difficulty": "Beginner",
+      "description": "Build wealth and financial security through smart money management",
+      "episodes": [
+        {
+          "id": "pf_01",
+          "title": "Budgeting Fundamentals & Cash Flow",
+          "audioPath": "assets/audio/learning_journeys/finance/episode_1/audio.mp3",
+          "duration": "8:15",
+          "description": "Creating effective budgets and understanding money flow",
+          "topics": ["Budgeting", "Cash Flow", "Expense Tracking", "Financial Planning"]
+        },
+        {
+          "id": "pf_02",
+          "title": "Emergency Funds & Financial Safety Nets",
+          "audioPath": "assets/audio/learning_journeys/finance/episode_2/audio.mp3",
+          "duration": "7:45",
+          "description": "Building financial safety nets and risk management",
+          "topics": ["Emergency Fund", "Risk Management", "Insurance", "Financial Security"]
+        },
+        {
+          "id": "pf_03",
+          "title": "Investment Basics & Portfolio Building",
+          "audioPath": "assets/audio/learning_journeys/finance/episode_3/audio.mp3",
+          "duration": "8:30",
+          "description": "Understanding investments and building diversified portfolios",
+          "topics": ["Investing", "Stocks", "Bonds", "Portfolio Diversification"]
+        },
+        {
+          "id": "pf_04",
+          "title": "Retirement Planning & Long-term Wealth",
+          "audioPath": "assets/audio/learning_journeys/finance/episode_4/audio.mp3",
+          "duration": "8:05",
+          "description": "Planning for retirement and building long-term wealth",
+          "topics": ["Retirement Planning", "401k", "IRA", "Long-term Investing"]
+        },
+        {
+          "id": "pf_05",
+          "title": "Tax Planning & Optimization Strategies",
+          "audioPath": "assets/audio/learning_journeys/finance/episode_5/audio.mp3",
+          "duration": "7:30",
+          "description": "Minimizing taxes and maximizing financial efficiency",
+          "topics": ["Tax Planning", "Tax-Advantaged Accounts", "Deductions", "Tax Strategies"]
+        },
+        {
+          "id": "pf_06",
+          "title": "Credit Management & Debt Strategy",
+          "audioPath": "assets/audio/learning_journeys/finance/episode_6/audio.mp3",
+          "duration": "8:10",
+          "description": "Managing credit effectively and debt elimination strategies",
+          "topics": ["Credit Management", "Debt Strategy", "Credit Score", "Debt Payoff"]
+        }
+      ]
+    }
+  }
+}
