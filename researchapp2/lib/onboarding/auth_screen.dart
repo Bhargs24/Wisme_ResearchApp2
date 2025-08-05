@@ -385,11 +385,10 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         // Send OTP for phone number verification
         await auth.sendPhoneOTP(_phoneController.text);
-        // TODO: Show OTP verification screen
-        // For now, we'll just show a success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('OTP sent to ${_phoneController.text}')),
-        );
+        
+        // Show OTP verification dialog for research participants
+        _showOTPVerificationDialog(context, auth);
+        return; // Don't navigate yet, wait for OTP verification
       }
       
       // Navigate based on admin status
@@ -402,6 +401,60 @@ class _AuthScreenState extends State<AuthScreen> {
     } catch (e) {
       setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
     }
+  }
+
+  void _showOTPVerificationDialog(BuildContext context, AuthProvider auth) {
+    final otpController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter OTP'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('OTP sent to ${_phoneController.text}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: otpController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              decoration: const InputDecoration(
+                labelText: 'Enter 6-digit OTP',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await auth.verifyPhoneOTP(otpController.text);
+                Navigator.pop(context);
+                
+                // Navigate based on admin status after successful verification
+                if (auth.isAdmin) {
+                  Navigator.pushReplacementNamed(context, '/admin');
+                } else {
+                  Navigator.pushReplacementNamed(context, '/consent');
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Invalid OTP: ${e.toString()}')),
+                );
+              }
+            },
+            child: const Text('Verify'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

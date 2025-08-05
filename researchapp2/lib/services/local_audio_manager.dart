@@ -11,6 +11,7 @@ class LocalAudioManager {
     final String folderName;
     switch (journey) {
       case 'dsa':
+      case 'data_structures_algorithms':
         folderName = 'dsa';
         break;
       case 'science_mysteries':

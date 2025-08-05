@@ -7,18 +7,57 @@ service cloud.firestore {
     }
     
     // Allow users to read and write their own progress data
-    match /user_progress/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    match /user_progress/{document=**} {
+      allow read, write: if request.auth != null;
     }
     
-    // Allow users to read and write their own metrics
-    match /research_metrics/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Allow authenticated users to write research metrics
+    match /research_metrics/{document=**} {
+      allow read, write: if request.auth != null;
     }
     
-    // Allow users to read and write their own feedback
-    match /user_feedback/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Allow users to submit feedback
+    match /user_feedback/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Episode progress tracking - allow authenticated users
+    match /episode_progress/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Episode completions - allow authenticated users
+    match /episode_completions/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Research sessions - allow authenticated users
+    match /research_sessions/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Completed journeys - allow authenticated users
+    match /completed_journeys/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Feedback collections - allow authenticated users
+    match /feedback/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /validated_feedback/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // User activity logs - allow authenticated users
+    match /user_activity_log/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Topic suggestions - allow authenticated users
+    match /topic_suggestions/{document=**} {
+      allow read, write: if request.auth != null;
     }
     
     // Admin access - allow admins to read all data
@@ -31,10 +70,9 @@ service cloud.firestore {
       allow write: if request.auth != null && isAdmin(request.auth.uid);
     }
     
-    // Research data - allow authenticated users to read, admins to write
+    // Research data - allow authenticated users to read and write
     match /research_data/{document=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && isAdmin(request.auth.uid);
+      allow read, write: if request.auth != null;
     }
     
     // Community requests - allow authenticated users to read and create

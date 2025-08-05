@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../core/firebase_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AnalyticsDashboardScreen extends StatefulWidget {
@@ -40,31 +41,290 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   }
 
   Future<void> _loadDashboardData() async {
+    setState(() => _isLoading = true);
+    
     try {
-      // Load comprehensive analytics data
-      final data = await FirebaseService.getDashboardAnalytics();
+      // Load real analytics data from Firebase
+      final data = await _fetchRealAnalyticsData();
       setState(() {
         _dashboardData = data;
         _isLoading = false;
       });
     } catch (e) {
-      print('Failed to load dashboard data: $e');
+      debugPrint('Failed to load dashboard data: $e');
       setState(() {
         _isLoading = false;
-        // Set default data for demo
+        // Use actual current data with zero values as fallback
         _dashboardData = {
-          'totalUsers': 156,
-          'totalFeedback': 89,
-          'totalActivities': 342,
-          'verifiedUsers': 142,
-          'flaggedResponses': 3,
-          'integrityScore': 0.96,
-          'willingToPay500': 73,
-          'willingToPay1000': 45,
-          'enterpriseInterest': 28,
-          'projectedRevenue': 125000,
+          'totalUsers': 0,
+          'totalFeedback': 0,
+          'totalActivities': 0,
+          'verifiedUsers': 0,
+          'flaggedResponses': 0,
+          'integrityScore': 0.0,
+          'willingToPay500': 0,
+          'willingToPay1000': 0,
+          'enterpriseInterest': 0,
+          'projectedRevenue': 0,
+          'demographics': {},
+          'retentionRates': {},
         };
       });
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchRealAnalyticsData() async {
+    // Get actual user count
+    final usersSnapshot = await FirebaseService.firestore
+        .collection('user_profiles')
+        .get();
+    
+    // Get actual feedback count
+    final feedbackSnapshot = await FirebaseService.firestore
+        .collection('research_metrics')
+        .get();
+    
+    // Get actual research data
+    final researchSnapshot = await FirebaseService.firestore
+        .collection('research_metrics')
+        .where('type', isEqualTo: 'product_market_fit')
+        .get();
+    
+    // Calculate real metrics
+    final totalUsers = usersSnapshot.docs.length;
+    final totalFeedback = feedbackSnapshot.docs.length;
+    
+    // Calculate willing to pay percentages from real data
+    int willingToPay500Count = 0;
+    int willingToPay1000Count = 0;
+    int enterpriseInterestCount = 0;
+    
+    for (final doc in researchSnapshot.docs) {
+      final data = doc.data();
+      final productData = data['data'] as Map<String, dynamic>?;
+      
+      if (productData != null) {
+        final pricing = productData['acceptablePrice'] as int?;
+        final enterprise = productData['enterpriseInterest'] as int?;
+        
+        if (pricing != null && pricing >= 500) willingToPay500Count++;
+        if (pricing != null && pricing >= 1000) willingToPay1000Count++;
+        if (enterprise != null && enterprise >= 7) enterpriseInterestCount++;
+      }
+    }
+    
+    final totalResearchResponses = researchSnapshot.docs.length;
+    final willingToPay500 = totalResearchResponses > 0 
+        ? ((willingToPay500Count / totalResearchResponses) * 100).round()
+        : 0;
+    final willingToPay1000 = totalResearchResponses > 0 
+        ? ((willingToPay1000Count / totalResearchResponses) * 100).round()
+        : 0;
+    final enterpriseInterest = totalResearchResponses > 0 
+        ? ((enterpriseInterestCount / totalResearchResponses) * 100).round()
+        : 0;
+    
+    // Calculate projected revenue based on real data
+    final projectedRevenue = (willingToPay500 * totalUsers * 500 * 0.01).round();
+    
+    return {
+      'totalUsers': totalUsers,
+      'totalFeedback': totalFeedback,
+      'totalActivities': totalFeedback, // Activities = feedback entries
+      'verifiedUsers': totalUsers, // All registered users are verified
+      'flaggedResponses': 0, // Implement fraud detection if needed
+      'integrityScore': totalUsers > 0 ? 1.0 : 0.0,
+      'willingToPay500': willingToPay500,
+      'willingToPay1000': willingToPay1000,
+      'enterpriseInterest': enterpriseInterest,
+      'projectedRevenue': projectedRevenue,
+      'demographics': await _calculateDemographics(usersSnapshot),
+      'retentionRates': await _calculateRetentionRates(usersSnapshot),
+    };
+  }
+  
+  Future<Map<String, dynamic>> _calculateDemographics(QuerySnapshot users) async {
+    final demographics = <String, int>{};
+    
+    for (final doc in users.docs) {
+      final data = doc.data() as Map<String, dynamic>?;
+      final demo = data?['demographics'] as Map<String, dynamic>?;
+      
+      if (demo != null) {
+        final age = demo['age'] as int?;
+        final education = demo['education'] as String?;
+        
+        if (age != null) {
+          String ageGroup;
+          if (age < 25) ageGroup = '18-24';
+          else if (age < 35) ageGroup = '25-34';
+          else if (age < 45) ageGroup = '35-44';
+          else ageGroup = '45+';
+          
+          demographics[ageGroup] = (demographics[ageGroup] ?? 0) + 1;
+        }
+        
+        if (education != null) {
+          demographics[education] = (demographics[education] ?? 0) + 1;
+        }
+      }
+    }
+    
+    return demographics;
+  }
+  
+  Future<Map<String, dynamic>> _calculateRetentionRates(QuerySnapshot users) async {
+    // Calculate retention based on user activity
+    final now = DateTime.now();
+    int activeLastDay = 0;
+    int activeLastWeek = 0;
+    int activeLastMonth = 0;
+    
+    for (final doc in users.docs) {
+      final data = doc.data() as Map<String, dynamic>?;
+      final lastActiveStr = data?['lastActive'] as String?;
+      
+      if (lastActiveStr != null) {
+        final lastActive = DateTime.tryParse(lastActiveStr);
+        if (lastActive != null) {
+          final daysSinceActive = now.difference(lastActive).inDays;
+          
+          if (daysSinceActive <= 1) activeLastDay++;
+          if (daysSinceActive <= 7) activeLastWeek++;
+          if (daysSinceActive <= 30) activeLastMonth++;
+        }
+      }
+    }
+    
+    final totalUsers = users.docs.length;
+    return {
+      'daily': totalUsers > 0 ? (activeLastDay / totalUsers * 100).round() : 0,
+      'weekly': totalUsers > 0 ? (activeLastWeek / totalUsers * 100).round() : 0,
+      'monthly': totalUsers > 0 ? (activeLastMonth / totalUsers * 100).round() : 0,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> _getEngagementTrends() async {
+    try {
+      // Get user activity data from last 4 weeks
+      final now = DateTime.now();
+      final weeks = <Map<String, dynamic>>[];
+      
+      for (int i = 3; i >= 0; i--) {
+        final weekStart = now.subtract(Duration(days: (i + 1) * 7));
+        final weekEnd = now.subtract(Duration(days: i * 7));
+        
+        final snapshot = await FirebaseService.firestore
+            .collection('user_activity')
+            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(weekStart))
+            .where('timestamp', isLessThan: Timestamp.fromDate(weekEnd))
+            .get();
+        
+        final uniqueUsers = <String>{};
+        for (final doc in snapshot.docs) {
+          final data = doc.data();
+          final userId = data['userId'] as String?;
+          if (userId != null) uniqueUsers.add(userId);
+        }
+        
+        weeks.add({
+          'label': 'Week ${4 - i}',
+          'value': (uniqueUsers.length * 20).clamp(0, 100), // Scale to percentage
+        });
+      }
+      
+      return weeks;
+    } catch (e) {
+      debugPrint('Failed to get engagement trends: $e');
+      return [
+        {'label': 'Week 1', 'value': 0},
+        {'label': 'Week 2', 'value': 0},
+        {'label': 'Week 3', 'value': 0},
+        {'label': 'Week 4', 'value': 0},
+      ];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getCompletionRates() async {
+    try {
+      // Get completion rates from learning journeys
+      final journeysSnapshot = await FirebaseService.firestore
+          .collection('learning_journeys')
+          .get();
+      
+      final completionData = <String, Map<String, int>>{};
+      
+      for (final doc in journeysSnapshot.docs) {
+        final data = doc.data();
+        final topic = data['topic'] as String? ?? 'Unknown';
+        final isCompleted = data['isCompleted'] as bool? ?? false;
+        
+        if (!completionData.containsKey(topic)) {
+          completionData[topic] = {'total': 0, 'completed': 0};
+        }
+        
+        completionData[topic]!['total'] = completionData[topic]!['total']! + 1;
+        if (isCompleted) {
+          completionData[topic]!['completed'] = completionData[topic]!['completed']! + 1;
+        }
+      }
+      
+      return completionData.entries.map((entry) {
+        final total = entry.value['total']!;
+        final completed = entry.value['completed']!;
+        final percentage = total > 0 ? ((completed / total) * 100).round() : 0;
+        
+        return {
+          'label': entry.key,
+          'value': percentage,
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('Failed to get completion rates: $e');
+      return [
+        {'label': 'No learning journeys started yet', 'value': 0},
+      ];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getUserDemographics() async {
+    try {
+      final demographics = _dashboardData['demographics'] as Map<String, dynamic>? ?? {};
+      
+      if (demographics.isEmpty) {
+        return [
+          {'label': 'No demographic data available', 'value': 0, 'color': AppColors.primaryBlue},
+        ];
+      }
+      
+      final total = demographics.values.fold<int>(0, (sum, count) => sum + (count as int));
+      final result = <Map<String, dynamic>>[];
+      
+      // Age groups
+      const ageGroups = ['18-24', '25-34', '35-44', '45+'];
+      const colors = [AppColors.primaryBlue, AppColors.accentGreen, AppColors.accentOrange, AppColors.accentRed];
+      
+      for (int i = 0; i < ageGroups.length; i++) {
+        final count = demographics[ageGroups[i]] as int? ?? 0;
+        final percentage = total > 0 ? ((count / total) * 100).round() : 0;
+        
+        if (percentage > 0) {
+          result.add({
+            'label': '${ageGroups[i]} years',
+            'value': percentage,
+            'color': colors[i % colors.length],
+          });
+        }
+      }
+      
+      return result.isNotEmpty ? result : [
+        {'label': 'No age data available', 'value': 0, 'color': AppColors.primaryBlue},
+      ];
+    } catch (e) {
+      debugPrint('Failed to get user demographics: $e');
+      return [
+        {'label': 'Error loading demographics', 'value': 0, 'color': AppColors.primaryBlue},
+      ];
     }
   }
 
@@ -254,12 +514,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
           const SizedBox(height: 24),
           SizedBox(
             height: 120,
-            child: _buildSimpleBarChart([
-              {'label': 'Week 1', 'value': 65},
-              {'label': 'Week 2', 'value': 78},
-              {'label': 'Week 3', 'value': 85},
-              {'label': 'Week 4', 'value': 92},
-            ]),
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _getEngagementTrends(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator(color: AppColors.accentGreen));
+                }
+                return _buildSimpleBarChart(snapshot.data ?? [
+                  {'label': 'No Data', 'value': 0},
+                ]);
+              },
+            ),
           ),
         ],
       ),
@@ -286,12 +551,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             ),
           ),
           const SizedBox(height: 24),
-          _buildProgressBars([
-            {'label': 'Data Structures', 'value': 82},
-            {'label': 'Operating Systems', 'value': 75},
-            {'label': 'Database Systems', 'value': 88},
-            {'label': 'Personal Finance', 'value': 91},
-          ]),
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: _getCompletionRates(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator(color: AppColors.accentGreen));
+              }
+              return _buildProgressBars(snapshot.data ?? [
+                {'label': 'No learning journeys completed yet', 'value': 0},
+              ]);
+            },
+          ),
         ],
       ),
     );
@@ -317,11 +587,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             ),
           ),
           const SizedBox(height: 24),
-          _buildDemographicBars([
-            {'label': '18-25 years', 'value': 35, 'color': AppColors.primaryBlue},
-            {'label': '26-35 years', 'value': 45, 'color': AppColors.accentGreen},
-            {'label': '36+ years', 'value': 20, 'color': AppColors.accentRed},
-          ]),
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: _getUserDemographics(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator(color: AppColors.accentGreen));
+              }
+              return _buildDemographicBars(snapshot.data ?? [
+                {'label': 'No demographic data yet', 'value': 0, 'color': AppColors.primaryBlue},
+              ]);
+            },
+          ),
         ],
       ),
     );
@@ -361,7 +637,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
           const SizedBox(height: 20),
           _buildQualityMetric('Verified Users', '${_dashboardData['verifiedUsers'] ?? 0}', Icons.verified),
           _buildQualityMetric('Flagged Responses', '${_dashboardData['flaggedResponses'] ?? 0}', Icons.flag),
-          _buildQualityMetric('Data Integrity Score', '${((_dashboardData['integrityScore'] ?? 0.95) * 100).toInt()}%', Icons.security),
+          _buildQualityMetric('Data Integrity Score', '${((_dashboardData['integrityScore'] ?? 0.0) * 100).toInt()}%', Icons.security),
         ],
       ),
     );
@@ -424,9 +700,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
             ],
           ),
           const SizedBox(height: 20),
-          _buildRevenueMetric('Willing to Pay ₹500/month', '${_dashboardData['willingToPay500'] ?? 73}%'),
-          _buildRevenueMetric('Willing to Pay ₹1000/month', '${_dashboardData['willingToPay1000'] ?? 45}%'),
-          _buildRevenueMetric('Enterprise Interest', '${_dashboardData['enterpriseInterest'] ?? 28}%'),
+          _buildRevenueMetric('Willing to Pay ₹500/month', '${_dashboardData['willingToPay500'] ?? 0}%'),
+          _buildRevenueMetric('Willing to Pay ₹1000/month', '${_dashboardData['willingToPay1000'] ?? 0}%'),
+          _buildRevenueMetric('Enterprise Interest', '${_dashboardData['enterpriseInterest'] ?? 0}%'),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
@@ -445,7 +721,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
                   ),
                 ),
                 Text(
-                  '₹${_formatNumber(_dashboardData['projectedRevenue'] ?? 125000)}',
+                  '₹${_formatNumber(_dashboardData['projectedRevenue'] ?? 0)}',
                   style: AppTextStyles.heading1.copyWith(
                     color: AppColors.accentGreen,
                     fontSize: 28,
@@ -640,13 +916,13 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
           'data_quality': {
             'verified_users': _dashboardData['verifiedUsers'] ?? 0,
             'flagged_responses': _dashboardData['flaggedResponses'] ?? 0,
-            'integrity_score': _dashboardData['integrityScore'] ?? 0.95,
+            'integrity_score': _dashboardData['integrityScore'] ?? 0.0,
           },
           'revenue_projections': {
-            'willing_to_pay_500': _dashboardData['willingToPay500'] ?? 73,
-            'willing_to_pay_1000': _dashboardData['willingToPay1000'] ?? 45,
-            'enterprise_interest': _dashboardData['enterpriseInterest'] ?? 28,
-            'projected_monthly_revenue': _dashboardData['projectedRevenue'] ?? 125000,
+            'willing_to_pay_500': _dashboardData['willingToPay500'] ?? 0,
+            'willing_to_pay_1000': _dashboardData['willingToPay1000'] ?? 0,
+            'enterprise_interest': _dashboardData['enterpriseInterest'] ?? 0,
+            'projected_monthly_revenue': _dashboardData['projectedRevenue'] ?? 0,
           }
         },
         'insights': {

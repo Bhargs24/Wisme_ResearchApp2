@@ -193,14 +193,14 @@ class _CommunityRequestsScreenState extends State<CommunityRequestsScreen>
             child: Row(
               children: [
                 Icon(
-                  Icons.info_outline,
+                  Icons.people_outline,
                   color: AppColors.primaryBlue,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Demo data - In the full app, this will show real community requests in real-time',
+                    'Community learning requests - Help shape what gets created next',
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.primaryBlue,
                       fontSize: 11,
@@ -223,52 +223,61 @@ class _CommunityRequestsScreenState extends State<CommunityRequestsScreen>
           return _buildLoadingState();
         }
         
-        // Combine real requests with demo data
-        final demoRequests = _getDemoRequests();
-        final realRequests = snapshot.hasData 
-            ? _processFirebaseRequests(snapshot.data!.docs)
-            : <Map<String, dynamic>>[];
-        
-        // Simple list - no aggregation or categorization
-        final allRequests = [...realRequests, ...demoRequests];
-        
-        // Sort by timestamp (most recent first)
-        allRequests.sort((a, b) => 
-          (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));
-        
-        if (allRequests.isEmpty) {
-          return _buildEmptyState();
-        }
-        
-        return Column(
-          children: allRequests.asMap().entries.map((entry) {
-            final index = entry.key;
-            final request = entry.value;
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: _loadCommunityRequests(),
+          builder: (context, communitySnapshot) {
+            if (communitySnapshot.connectionState == ConnectionState.waiting) {
+              return _buildLoadingState();
+            }
             
-            return AnimatedBuilder(
-              animation: _staggerController,
-              builder: (context, child) {
-                final animationValue = Tween(begin: 0.0, end: 1.0).animate(
-                  CurvedAnimation(
-                    parent: _staggerController,
-                    curve: Interval(
-                      (index * 0.1).clamp(0.0, 1.0),
-                      ((index * 0.1) + 0.3).clamp(0.0, 1.0),
-                      curve: Curves.easeOut,
-                    ),
-                  ),
-                );
+            // Get community requests
+            final communityRequests = communitySnapshot.data ?? [];
+            final realRequests = snapshot.hasData 
+                ? _processFirebaseRequests(snapshot.data!.docs)
+                : <Map<String, dynamic>>[];
+            
+            // Combine real requests with community requests
+            final allRequests = [...realRequests, ...communityRequests];
+            
+            // Sort by timestamp (most recent first)
+            allRequests.sort((a, b) => 
+              (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));
+            
+            if (allRequests.isEmpty) {
+              return _buildEmptyState();
+            }
+            
+            return Column(
+              children: allRequests.asMap().entries.map((entry) {
+                final index = entry.key;
+                final request = entry.value;
                 
-                return Transform.translate(
-                  offset: Offset(0, 50 * (1 - animationValue.value)),
-                  child: Opacity(
-                    opacity: animationValue.value,
-                    child: _buildSimpleRequestCard(request, index),
-                  ),
+                return AnimatedBuilder(
+                  animation: _staggerController,
+                  builder: (context, child) {
+                    final animationValue = Tween(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: _staggerController,
+                        curve: Interval(
+                          (index * 0.1).clamp(0.0, 1.0),
+                          ((index * 0.1) + 0.3).clamp(0.0, 1.0),
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                    );
+                    
+                    return Transform.translate(
+                      offset: Offset(0, 50 * (1 - animationValue.value)),
+                      child: Opacity(
+                        opacity: animationValue.value,
+                        child: _buildSimpleRequestCard(request, index),
+                      ),
+                    );
+                  },
                 );
-              },
+              }).toList(),
             );
-          }).toList(),
+          },
         );
       },
     );
@@ -289,51 +298,40 @@ class _CommunityRequestsScreenState extends State<CommunityRequestsScreen>
     }).toList();
   }
 
-  List<Map<String, dynamic>> _getDemoRequests() {
-    return [
-      {
-        'topic': 'Machine Learning Fundamentals',
-        'requesterName': 'Anonymous',
-        'isAnonymous': true,
-        'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
-        'isUserGenerated': false,
-      },
-      {
-        'topic': 'Public Speaking Confidence',
-        'requesterName': 'Sarah K.',
-        'isAnonymous': false,
-        'timestamp': DateTime.now().subtract(const Duration(hours: 5)),
-        'isUserGenerated': false,
-      },
-      {
-        'topic': 'Blockchain Technology',
-        'requesterName': 'Anonymous',
-        'isAnonymous': true,
-        'timestamp': DateTime.now().subtract(const Duration(hours: 8)),
-        'isUserGenerated': false,
-      },
-      {
-        'topic': 'Digital Marketing Strategy',
-        'requesterName': 'Alex M.',
-        'isAnonymous': false,
-        'timestamp': DateTime.now().subtract(const Duration(days: 1)),
-        'isUserGenerated': false,
-      },
-      {
-        'topic': 'Photography Basics',
-        'requesterName': 'Anonymous',
-        'isAnonymous': true,
-        'timestamp': DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-        'isUserGenerated': false,
-      },
-      {
-        'topic': 'React.js for Beginners',
-        'requesterName': 'Jamie L.',
-        'isAnonymous': false,
-        'timestamp': DateTime.now().subtract(const Duration(days: 2)),
-        'isUserGenerated': false,
-      },
-    ];
+  Future<List<Map<String, dynamic>>> _loadCommunityRequests() async {
+    try {
+      // Load real community requests from Firebase
+      final snapshot = await FirebaseFirestore.instance
+          .collection('community_requests')
+          .orderBy('timestamp', descending: true)
+          .limit(20)
+          .get();
+      
+      if (snapshot.docs.isEmpty) {
+        // If no requests exist yet, return empty list
+        return [];
+      }
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'topic': data['topic'] ?? 'Unknown Topic',
+          'requesterName': data['requesterName'] ?? 'Anonymous',
+          'isAnonymous': data['isAnonymous'] ?? true,
+          'timestamp': (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          'isUserGenerated': data['isUserGenerated'] ?? true,
+          'description': data['description'] ?? '',
+          'category': data['category'] ?? 'General',
+          'votes': data['votes'] ?? 0,
+          'status': data['status'] ?? 'pending',
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('Failed to load community requests: $e');
+      // Return empty list instead of hardcoded demo data
+      return [];
+    }
   }
 
   Widget _buildEmptyState() {

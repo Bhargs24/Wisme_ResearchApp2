@@ -272,21 +272,7 @@ class FirebaseService {
     }
   }
 
-  // Anonymous sign-in for demo/research
-  static Future<User?> signInAnonymously() async {
-    final result = await auth.signInAnonymously();
-    
-    // Update user profile in Firestore
-    if (result.user != null) {
-      await createOrUpdateUserProfile(result.user!.uid, {
-        'signInMethod': 'anonymous',
-        'lastSignIn': FieldValue.serverTimestamp(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    }
-    
-    return result.user;
-  }
+  // REMOVED: Anonymous sign-in - All users must register properly for reliable research data
 
   // Universal sign out method
   static Future<void> signOut() async {

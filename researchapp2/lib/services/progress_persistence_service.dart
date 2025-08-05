@@ -59,11 +59,14 @@ class ProgressPersistenceService {
         
         await _prefs?.setString(_episodeProgressKey, jsonEncode(progressData));
         debugPrint('💾 Saved episode position: $episodeId at ${positionSeconds}s');
+        debugPrint('🔍 PROGRESS DATA: ${progressData[episodeId]}');
         
         // Auto-sync to Firebase with offline support
         if (await OfflineManager.isOnline()) {
+          print('🔍 SYNCING TO FIREBASE: $episodeId');
           _syncProgressToFirebase(episodeId, progressData[episodeId]!);
         } else {
+          print('🔍 OFFLINE: Queuing progress for sync');
           await OfflineManager.queueAction('save_progress', {
             'episodeId': episodeId,
             'progressData': progressData[episodeId]!,

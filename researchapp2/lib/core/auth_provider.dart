@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_service.dart';
 import 'admin_service.dart';
+import '../services/progress_persistence_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
@@ -73,11 +74,28 @@ class AuthProvider extends ChangeNotifier {
         // Check admin status
         await checkAdminStatus();
         
+        // 🔥 CRITICAL: Load cross-device progress when user signs in
+        await _loadCrossDeviceProgress();
+        
         print('✅ User profile loaded from Firebase');
       }
     } catch (e) {
       print('❌ Failed to load user profile: $e');
       _isProfileLoaded = false;
+    }
+  }
+
+  // 🔥 NEW: Load progress from Firebase for cross-device sync
+  Future<void> _loadCrossDeviceProgress() async {
+    if (_user == null) return;
+    
+    try {
+      // Load progress from Firebase to sync across devices
+      await ProgressPersistenceService.loadProgressFromFirebase(_user!.uid);
+      print('✅ Cross-device progress loaded successfully');
+    } catch (e) {
+      print('❌ Failed to load cross-device progress: $e');
+      // Don't fail the login process if progress sync fails
     }
   }
   
@@ -189,30 +207,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Anonymous Sign-In for guest users
-  Future<void> signInAnonymously() async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _user = await FirebaseService.signInAnonymously();
-      if (_user != null) {
-        // Create anonymous user profile for research tracking
-        await FirebaseService.createOrUpdateUserProfile(_user!.uid, {
-          'isAnonymous': true,
-          'createdAt': DateTime.now().toIso8601String(),
-          'researchConsent': true,
-          'deviceInfo': await _getDeviceInfo(),
-          'ipAddress': await _getIPAddress(),
-        });
-      }
-    } catch (e) {
-      print('Anonymous sign-in failed: $e');
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
+  // REMOVED: Anonymous Sign-In - All users must register properly for reliable research data
 
   // Admin access check - now uses proper role-based system
   bool get isAdmin => _isAdminUser ?? false;

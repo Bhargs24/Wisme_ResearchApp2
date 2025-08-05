@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_service.dart';
 
 class OfflineManager {
   static const String _offlineDataKey = 'offline_data';
@@ -131,24 +133,21 @@ class OfflineManager {
     final actionType = action['action'] as String;
     final data = action['data'] as Map<String, dynamic>;
     
-    // Import services dynamically to avoid circular dependencies
+    // Import dynamically to avoid circular dependencies
     switch (actionType) {
       case 'save_progress':
-        // Process progress save
-        final progressService = await _getProgressService();
-        await progressService.syncToFirebase(data);
+        // Process progress save directly to Firebase
+        await _syncProgressDirectly(data);
         break;
         
       case 'submit_feedback':
-        // Process feedback submission
-        final researchService = await _getResearchService();
-        await researchService.submitFeedback(data);
+        // Process feedback submission directly to Firebase
+        await _submitFeedbackDirectly(data);
         break;
         
       case 'update_profile':
-        // Process profile update
-        final authService = await _getAuthService();
-        await authService.updateProfile(data);
+        // Process profile update directly to Firebase
+        await _updateProfileDirectly(data);
         break;
         
       default:
@@ -156,20 +155,51 @@ class OfflineManager {
     }
   }
   
-  /// Dynamic service getters to avoid circular imports
-  static Future<dynamic> _getProgressService() async {
-    // Return progress persistence service instance
-    throw UnimplementedError('Progress service integration needed');
+  /// Direct Firebase progress sync
+  static Future<void> _syncProgressDirectly(Map<String, dynamic> data) async {
+    try {
+      final episodeId = data['episodeId'] as String?;
+      final progressData = data['progressData'] as Map<String, dynamic>?;
+      
+      if (episodeId != null && progressData != null) {
+        // Use Firebase service directly
+        await FirebaseService.firestore
+            .collection('episode_progress')
+            .doc(episodeId)
+            .set(progressData, SetOptions(merge: true));
+      }
+    } catch (e) {
+      print('Failed to sync progress directly: $e');
+      rethrow;
+    }
   }
   
-  static Future<dynamic> _getResearchService() async {
-    // Return research metrics service instance
-    throw UnimplementedError('Research service integration needed');
+  /// Direct Firebase feedback submission
+  static Future<void> _submitFeedbackDirectly(Map<String, dynamic> data) async {
+    try {
+      await FirebaseService.firestore
+          .collection('feedback')
+          .add(data);
+    } catch (e) {
+      print('Failed to submit feedback directly: $e');
+      rethrow;
+    }
   }
   
-  static Future<dynamic> _getAuthService() async {
-    // Return auth service instance
-    throw UnimplementedError('Auth service integration needed');
+  /// Direct Firebase profile update
+  static Future<void> _updateProfileDirectly(Map<String, dynamic> data) async {
+    try {
+      final userId = data['userId'] as String?;
+      if (userId != null) {
+        await FirebaseService.firestore
+            .collection('users')
+            .doc(userId)
+            .set(data, SetOptions(merge: true));
+      }
+    } catch (e) {
+      print('Failed to update profile directly: $e');
+      rethrow;
+    }
   }
   
   /// Initialize offline manager

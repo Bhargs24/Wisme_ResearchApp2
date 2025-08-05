@@ -4,6 +4,7 @@ import '../theme/app_text_styles.dart';
 import 'package:provider/provider.dart';
 import 'gamification_provider.dart';
 import '../core/auth_provider.dart';
+import '../core/research_metrics_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -13,11 +14,14 @@ class ProfileScreen extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
     final userName = authProvider.user?.displayName ?? 'User'; // Get real user name
     final gamification = Provider.of<GamificationProvider>(context);
+    final research = Provider.of<ResearchMetricsProvider>(context);
     final xp = gamification.xp;
     final xpToNext = ((xp ~/ 1000) + 1) * 1000; // Simple level logic: 1000 XP per level
     final badges = gamification.badges;
-    // TODO: Get real journey count from progress service
-    final journeys = 4; // Will be replaced with actual count from ProgressPersistenceService
+    
+    // Get real journey count from research metrics
+    final journeys = research.completedJourneys.length; // Dynamic count from actual progress
+    
     final streak = gamification.streak;
     final level = (xp ~/ 1000) + 1;
     return Scaffold(

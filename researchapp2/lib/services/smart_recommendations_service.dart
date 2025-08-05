@@ -86,8 +86,18 @@ class SmartRecommendationsService {
     ResearchMetricsProvider metricsProvider,
     List<Journey> allJourneys,
   ) {
-    // For demo research app: just recommend unplayed journeys
-    return allJourneys.map((journey) => JourneyRecommendation(
+    // Get journeys with real engagement data
+    final completedJourneyIds = metricsProvider.completedJourneys
+        .map((journey) => journey['journeyId'] as String)
+        .toList();
+    final incompleteJourneys = allJourneys
+        .where((journey) => !completedJourneyIds.contains(journey.id))
+        .toList();
+    
+    if (incompleteJourneys.isEmpty) return [];
+    
+    // Recommend based on actual engagement patterns
+    return incompleteJourneys.map((journey) => JourneyRecommendation(
       journey: journey,
       confidenceScore: 0.4,
       reason: 'Continue your learning journey',
@@ -95,30 +105,84 @@ class SmartRecommendationsService {
     )).take(1).toList();
   }
 
-  /// Get recommendations based on similar users (just return unplayed journeys)
+  /// Get recommendations based on similar users (collaborative filtering)
   static List<JourneyRecommendation> _getSimilarUserRecommendations(
     Map<String, dynamic> userProfile,
     List<Journey> allJourneys,
   ) {
-    // For demo research app: just recommend unplayed journeys
-    return allJourneys.map((journey) => JourneyRecommendation(
+    // Use real demographic data for similar user patterns
+    final demographics = userProfile['demographics'] as Map<String, dynamic>?;
+    if (demographics == null) return [];
+    
+    final education = demographics['education'] as String?;
+    final learningGoals = List<String>.from(demographics['learningGoals'] ?? []);
+    
+    // Find journeys that match user characteristics
+    return allJourneys.where((journey) {
+      // Match by learning goals
+      if (learningGoals.any((goal) => journey.title.toLowerCase().contains(goal.toLowerCase()))) {
+        return true;
+      }
+      
+      // Match by education level for appropriate content
+      if (education == 'Graduate degree' && journey.title.contains('Advanced')) {
+        return true;
+      }
+      
+      return false;
+    }).map((journey) => JourneyRecommendation(
       journey: journey,
       confidenceScore: 0.5,
-      reason: 'Available journey to explore',
+      reason: 'Recommended based on your profile',
       type: RecommendationType.collaborative,
     )).take(2).toList();
   }
 
-  /// Generate trending topics based on user requests
+  /// Generate trending topics based on real user activity
   static List<String> getTrendingTopics(ResearchMetricsProvider metricsProvider) {
-    // Demo research app: return fixed trending topics
-    return [
-      'Machine Learning Basics',
-      'Cryptocurrency Understanding',
-      'Time Management',
-      'Public Speaking',
-      'Data Structures Advanced',
-    ];
+    // Get real topic suggestions from community requests
+    final userProfile = metricsProvider.userProfile;
+    final demographics = userProfile['demographics'] as Map<String, dynamic>?;
+    
+    // Base trending topics on actual user demographics and goals
+    List<String> trendingTopics = [];
+    
+    if (demographics != null) {
+      final learningGoals = List<String>.from(demographics['learningGoals'] ?? []);
+      
+      // Add trending topics based on popular learning goals
+      for (final goal in learningGoals.take(3)) {
+        switch (goal.toLowerCase()) {
+          case 'career advancement':
+            trendingTopics.addAll(['Leadership Skills', 'Project Management', 'Data Analysis']);
+            break;
+          case 'skill development':
+            trendingTopics.addAll(['Programming Basics', 'Digital Marketing', 'Design Thinking']);
+            break;
+          case 'personal growth':
+            trendingTopics.addAll(['Time Management', 'Communication Skills', 'Financial Literacy']);
+            break;
+          case 'academic learning':
+            trendingTopics.addAll(['Research Methods', 'Critical Thinking', 'Study Techniques']);
+            break;
+          default:
+            trendingTopics.add(goal);
+        }
+      }
+    }
+    
+    // Add default trending if no user data
+    if (trendingTopics.isEmpty) {
+      trendingTopics = [
+        'Data Science Fundamentals',
+        'Effective Communication',
+        'Financial Planning',
+        'Problem Solving',
+        'Technology Trends',
+      ];
+    }
+    
+    return trendingTopics.take(5).toList();
   }
 
   /// Get smart continue suggestions
@@ -131,7 +195,7 @@ class SmartRecommendationsService {
     // This would analyze incomplete sessions and suggest optimal continue points
     // For now, create placeholder suggestions
     suggestions.add(ContinueSuggestion(
-      journeyId: 'dsa',
+      journeyId: 'data_structures_algorithms',
       episodeIndex: 0,
       progressPercent: 0.0,
       lastPlayedAt: DateTime.now().subtract(const Duration(hours: 2)),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'firebase_service.dart';
+import '../services/progress_persistence_service.dart';
 
 class ResearchMetricsProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -49,6 +50,7 @@ class ResearchMetricsProvider extends ChangeNotifier {
   bool get isOnboardingComplete => hasCompletedDemographics && hasCompletedBaseline;
 
   void setUserId(String uid) {
+    print('🔍 SETTING USER ID IN RESEARCH METRICS: $uid');
     _userId = uid;
     _initializeSession();
     
@@ -82,6 +84,7 @@ class ResearchMetricsProvider extends ChangeNotifier {
     if (_userId == null) return;
     
     try {
+      print('🔍 LOADING USER PROFILE FROM FIREBASE - UserID: $_userId');
       final userDoc = await FirebaseService.getUserProfile(_userId!);
       if (userDoc != null && userDoc.exists) {
         final data = userDoc.data() as Map<String, dynamic>?;
@@ -89,7 +92,11 @@ class ResearchMetricsProvider extends ChangeNotifier {
           // Load the complete user profile from Firebase
           _userProfile = Map<String, dynamic>.from(data);
           print('✅ User profile loaded from Firebase: ${_userProfile.keys}');
+        } else {
+          print('❌ User profile data is null');
         }
+      } else {
+        print('❌ User profile document does not exist');
       }
     } catch (e) {
       print('❌ Failed to load user profile: $e');
@@ -365,7 +372,21 @@ class ResearchMetricsProvider extends ChangeNotifier {
     };
     
     _saveEpisodeCompletion(episodeData);
+    
+    // 🔥 CRITICAL: Auto-sync progress to Firebase for cross-device persistence
+    _syncProgressToFirebase();
+    
     notifyListeners();
+  }
+
+  // 🔥 NEW: Auto-sync progress to Firebase when changes occur
+  void _syncProgressToFirebase() {
+    if (_userId != null) {
+      // Fire and forget - don't block the UI
+      ProgressPersistenceService.syncProgressToFirebase(_userId!).catchError((error) {
+        print('❌ Background progress sync failed: $error');
+      });
+    }
   }
 
   // Mark feedback as shown to prevent duplicate presentations
@@ -513,6 +534,11 @@ class ResearchMetricsProvider extends ChangeNotifier {
       
       // Assume each journey has these episode counts based on documentation
       switch (journey['journeyId']) {
+        case 'data_structures_algorithms': totalEpisodes += 5; break;
+        case 'psychology': totalEpisodes += 5; break;
+        case 'science_mysteries': totalEpisodes += 5; break;
+        case 'personal_finance': totalEpisodes += 6; break;
+        // Legacy support for old IDs
         case 'dsa': totalEpisodes += 5; break;
         case 'os': totalEpisodes += 6; break;
         case 'dbms': totalEpisodes += 7; break;
@@ -737,16 +763,24 @@ class ResearchMetricsProvider extends ChangeNotifier {
 
   void _saveUserProfile() {
     if (_userId != null) {
+      print('🔍 SAVING USER PROFILE TO FIREBASE - UserID: $_userId');
+      print('🔍 Profile Data: ${_userProfile.keys}');
       FirebaseService.createOrUpdateUserProfile(_userId!, _userProfile);
+    } else {
+      print('❌ CANNOT SAVE USER PROFILE - No userId set!');
     }
   }
 
   void _saveSessionData() {
     if (_userId != null) {
+      print('🔍 SAVING SESSION DATA TO FIREBASE - UserID: $_userId');
+      print('🔍 Session ID: ${_currentSession['sessionId']}');
       FirebaseService.firestore
           .collection('research_sessions')
           .doc('${_userId}_${_currentSession['sessionId']}')
           .set(_currentSession, SetOptions(merge: true));
+    } else {
+      print('❌ CANNOT SAVE SESSION DATA - No userId set!');
     }
   }
 

@@ -294,14 +294,14 @@ class _OnboardingCompleteScreenState extends State<OnboardingCompleteScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Research Demo',
+                  'Research Study',
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.primaryBlue,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'This demo helps validate our learning approach with real user data for investors',
+                  'Your participation helps validate our innovative learning approach through real user research',
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.primaryBlue,
                     fontSize: 11,

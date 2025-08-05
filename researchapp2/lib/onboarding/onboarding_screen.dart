@@ -52,10 +52,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   ];
 
   final Map<String, String> _subjects = {
-    'dsa': 'Data Structures & Algorithms',
-    'os': 'Operating Systems',
-    'dbms': 'Database Management',
-    'finance': 'Personal Finance',
+    'data_structures_algorithms': 'Data Structures & Algorithms',
+    'psychology': 'Psychology & Human Behavior',
+    'science_mysteries': 'Science Mysteries & Discoveries',
+    'personal_finance': 'Personal Finance',
   };
 
   @override

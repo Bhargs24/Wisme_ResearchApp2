@@ -178,7 +178,7 @@ class WelcomeScreen extends StatelessWidget {
                 _buildResearchPoint('📊', 'Participate in learning research'),
                 _buildResearchPoint('🎧', 'Experience new learning methods'),
                 _buildResearchPoint('📝', 'Share your feedback & insights'),
-                _buildResearchPoint('🏆', 'Contribute to education innovation'),
+                _buildResearchPoint('�', 'FREE 3-month premium access to main app'),
                 const Spacer(),
                 Container(
                   decoration: BoxDecoration(

@@ -31,7 +31,7 @@ def convert_txt_to_csv(input_folder, output_folder):
 
             print(f"✅ Converted: {filename} → {csv_name}")
 
-# ✏️ Example usage — Update these paths
+
 input_folder = 'D:/Startups/Wisme/Development/ResearchApp/Python csv script generator/txt Files'
 output_folder = 'D:/Startups/Wisme/Development/ResearchApp/Python csv script generator/csv Files'
 

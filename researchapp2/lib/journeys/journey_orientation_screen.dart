@@ -89,14 +89,7 @@ class _JourneyOrientationScreenState extends State<JourneyOrientationScreen>
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primaryBlue,
-                          AppColors.primaryBlue.withOpacity(0.7),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: AppColors.primaryBlue,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(

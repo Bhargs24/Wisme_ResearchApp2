@@ -57,7 +57,13 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       curve: Curves.easeOutCubic,
     );
     
-    // REMOVED: Stupid floating animation - keep static for professional look
+    _floatingAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _floatingController,
+      curve: Curves.elasticOut,
+    ));
     _floatingAnimation = Tween<Offset>(
       begin: const Offset(0, 0),
       end: const Offset(0, 0), // Static position
@@ -82,43 +88,31 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.topRight,
-            radius: 1.2,
-            colors: [
-              AppColors.primaryBlue.withOpacity(0.3),
-              AppColors.backgroundDark,
-              AppColors.backgroundDark,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              _buildModernAppBar(),
-              SliverPadding(
-                padding: const EdgeInsets.all(24),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _buildHeroSection(),
-                    const SizedBox(height: 32),
-                    _buildContinueListening(),
-                    const SizedBox(height: 32),
-                    _buildQuickActions(),
-                    const SizedBox(height: 32),
-                    _buildTrendingTopics(),
-                    const SizedBox(height: 32),
-                    _buildRecentActivity(),
-                    const SizedBox(height: 32),
-                    _buildFullAppTeaser(),
-                    const SizedBox(height: 100), // Bottom padding
-                  ]),
-                ),
+      backgroundColor: AppColors.backgroundDark,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            _buildModernAppBar(),
+            SliverPadding(
+              padding: const EdgeInsets.all(24),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildHeroSection(),
+                  const SizedBox(height: 32),
+                  _buildContinueListening(),
+                  const SizedBox(height: 32),
+                  _buildQuickActions(),
+                  const SizedBox(height: 32),
+                  _buildTrendingTopics(),
+                  const SizedBox(height: 32),
+                  _buildRecentActivity(),
+                  const SizedBox(height: 32),
+                  _buildFullAppTeaser(),
+                  const SizedBox(height: 100), // Bottom padding
+                ]),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: _buildSmartFAB(),
@@ -137,124 +131,110 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
             bottomLeft: Radius.circular(30),
             bottomRight: Radius.circular(30),
           ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primaryBlue.withOpacity(0.1),
-                    AppColors.accentGreen.withOpacity(0.1),
-                  ],
-                ),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground.withOpacity(0.9),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome to Wisme',
-                              style: AppTextStyles.heading1.copyWith(
-                                color: Colors.white,
-                                fontSize: 24,
-                              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome to Wisme',
+                            style: AppTextStyles.heading1.copyWith(
+                              color: Colors.white,
+                              fontSize: 24,
                             ),
-                            Text(
-                              'Research Demo Experience',
-                              style: AppTextStyles.caption.copyWith(
-                                color: Colors.white70,
-                              ),
+                          ),
+                          Text(
+                            'Research Demo Experience',
+                            style: AppTextStyles.caption.copyWith(
+                              color: Colors.white70,
                             ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            // Admin Analytics Button - Only for specific admin email
-                            Consumer<AuthProvider>(
-                              builder: (context, auth, _) {
-                                if (auth.user?.email == 'bhargavr098@gmail.com') {
-                                  return Container(
-                                    margin: const EdgeInsets.only(right: 12),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const ResearchAnalyticsDashboard(),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [Colors.purple, Colors.pink],
-                                          ),
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.purple.withOpacity(0.3),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 6),
-                                            ),
-                                          ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          // Admin Analytics Button - Only for specific admin email
+                          Consumer<AuthProvider>(
+                            builder: (context, auth, _) {
+                              if (auth.user?.email == 'bhargavr098@gmail.com') {
+                                return Container(
+                                  margin: const EdgeInsets.only(right: 12),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const ResearchAnalyticsDashboard(),
                                         ),
-                                        child: const Icon(
-                                          Icons.analytics,
-                                          color: Colors.white,
-                                          size: 24,
-                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accentGreen,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.accentGreen.withOpacity(0.3),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.analytics,
+                                        color: Colors.white,
+                                        size: 24,
                                       ),
                                     ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              },
-                            ),
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [AppColors.primaryBlue, AppColors.accentGreen],
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primaryBlue.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
                                   ),
-                                ],
-                              ),
-                              child: IconButton(
-                                onPressed: () => Navigator.pushNamed(context, '/profile'),
-                                icon: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 24,
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryBlue,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryBlue.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
+                              ],
+                            ),
+                            child: IconButton(
+                              onPressed: () => Navigator.pushNamed(context, '/profile'),
+                              icon: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 24,
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -816,7 +796,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                'Live demo engagement data',
+                'Real-time engagement metrics',
                 style: AppTextStyles.caption.copyWith(
                   color: Colors.white60,
                 ),

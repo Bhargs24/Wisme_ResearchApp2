@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 import '../core/auth_provider.dart';
 import '../core/firebase_service.dart';
+import '../research/essential_metrics_exporter.dart';
 
 class ResearchAnalyticsDashboard extends StatefulWidget {
   const ResearchAnalyticsDashboard({super.key});
@@ -159,9 +162,52 @@ class _ResearchAnalyticsDashboardState extends State<ResearchAnalyticsDashboard>
             icon: const Icon(Icons.refresh),
             onPressed: _loadAnalyticsData,
           ),
-          IconButton(
+          // 🎯 ESSENTIAL METRICS EXPORT - Admin Only
+          PopupMenuButton<String>(
             icon: const Icon(Icons.download),
-            onPressed: _exportData,
+            onSelected: _handleExport,
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'essential_json',
+                child: Row(
+                  children: [
+                    Icon(Icons.analytics, size: 16),
+                    SizedBox(width: 8),
+                    Text('Essential Metrics (JSON)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'essential_csv',
+                child: Row(
+                  children: [
+                    Icon(Icons.table_chart, size: 16),
+                    SizedBox(width: 8),
+                    Text('Essential Metrics (CSV)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'research_summary',
+                child: Row(
+                  children: [
+                    Icon(Icons.summarize, size: 16),
+                    SizedBox(width: 8),
+                    Text('Research Summary'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'raw_data',
+                child: Row(
+                  children: [
+                    Icon(Icons.data_object, size: 16),
+                    SizedBox(width: 8),
+                    Text('Raw Data Export'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -382,30 +428,106 @@ class _ResearchAnalyticsDashboardState extends State<ResearchAnalyticsDashboard>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Data Export', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const Text('🎯 Essential Research Metrics Export', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        const Text('Export only the critical metrics needed to validate your conversational learning method.', 
+                   style: TextStyle(color: Colors.grey)),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            ElevatedButton.icon(
-              onPressed: _exportUserData,
-              icon: const Icon(Icons.people),
-              label: const Text('Export User Data'),
+        
+        // Essential Metrics Preview Card
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('📊 Available Exports:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                
+                _buildExportOption(
+                  icon: Icons.analytics,
+                  title: 'Essential Metrics (JSON)',
+                  description: 'Complete dataset for research analysis',
+                  action: () => _handleExport('essential_json'),
+                ),
+                
+                _buildExportOption(
+                  icon: Icons.table_chart,
+                  title: 'Essential Metrics (CSV)',
+                  description: 'Spreadsheet-friendly format',
+                  action: () => _handleExport('essential_csv'),
+                ),
+                
+                _buildExportOption(
+                  icon: Icons.summarize,
+                  title: 'Research Summary',
+                  description: 'Key findings and conclusions',
+                  action: () => _handleExport('research_summary'),
+                ),
+                
+                _buildExportOption(
+                  icon: Icons.data_object,
+                  title: 'Raw Data Export',
+                  description: 'All collected data for deep analysis',
+                  action: () => _handleExport('raw_data'),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            ElevatedButton.icon(
-              onPressed: _exportFeedbackData,
-              icon: const Icon(Icons.feedback),
-              label: const Text('Export Feedback'),
-            ),
-            const SizedBox(width: 16),
-            ElevatedButton.icon(
-              onPressed: _exportAnalyticsReport,
-              icon: const Icon(Icons.analytics),
-              label: const Text('Full Report'),
-            ),
-          ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info, color: Colors.blue, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Metrics are copied to clipboard. Paste into your research documents or analysis tools.',
+                  style: TextStyle(fontSize: 12, color: Colors.blue),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+  
+  Widget _buildExportOption({
+    required IconData icon,
+    required String title,
+    required String description,
+    required VoidCallback action,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text(description, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: action,
+            child: const Text('Export'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -423,31 +545,214 @@ class _ResearchAnalyticsDashboardState extends State<ResearchAnalyticsDashboard>
     return satisfactionScores.reduce((a, b) => a + b) / satisfactionScores.length;
   }
 
-  void _exportData() {
-    // Generate CSV export data
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data exported successfully')),
+  // 🎯 ESSENTIAL METRICS EXPORT METHODS - Admin Only
+  Future<void> _handleExport(String exportType) async {
+    try {
+      switch (exportType) {
+        case 'essential_json':
+          await _exportEssentialMetricsJSON();
+          break;
+        case 'essential_csv':
+          await _exportEssentialMetricsCSV();
+          break;
+        case 'research_summary':
+          await _exportResearchSummary();
+          break;
+        case 'raw_data':
+          await _exportRawData();
+          break;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    }
+  }
+
+  /// 📊 Export Essential Metrics as JSON
+  Future<void> _exportEssentialMetricsJSON() async {
+    final metrics = await EssentialMetricsExporter.getEssentialMetrics();
+    
+    // Copy to clipboard for now (file download requires platform-specific implementation)
+    final jsonString = const JsonEncoder.withIndent('  ').convert(metrics);
+    await Clipboard.setData(ClipboardData(text: jsonString));
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Essential metrics JSON copied to clipboard!'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+    
+    // Show summary dialog
+    _showMetricsSummary(metrics);
+  }
+
+  /// 📊 Export Essential Metrics as CSV
+  Future<void> _exportEssentialMetricsCSV() async {
+    final csvContent = await EssentialMetricsExporter.exportToCSV();
+    await Clipboard.setData(ClipboardData(text: csvContent));
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Essential metrics CSV copied to clipboard!'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// 📋 Export Research Summary
+  Future<void> _exportResearchSummary() async {
+    final metrics = await EssentialMetricsExporter.getEssentialMetrics();
+    final summary = _generateResearchSummary(metrics);
+    
+    await Clipboard.setData(ClipboardData(text: summary));
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Research summary copied to clipboard!'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// 📋 Generate Research Summary Text
+  String _generateResearchSummary(Map<String, dynamic> metrics) {
+    final learning = metrics['learningEffectiveness'] as Map<String, dynamic>;
+    final commercial = metrics['commercialValidation'] as Map<String, dynamic>;
+    final engagement = metrics['engagementMetrics'] as Map<String, dynamic>;
+    final satisfaction = metrics['satisfactionMetrics'] as Map<String, dynamic>;
+    
+    return '''
+🔬 WISME CONVERSATIONAL LEARNING - RESEARCH SUMMARY
+Generated: ${DateTime.now().toString()}
+
+📊 SAMPLE SIZE: ${metrics['totalUsers']} users
+
+🎯 KEY FINDINGS:
+
+1. LEARNING EFFECTIVENESS
+   • Average Learning Effectiveness: ${learning['averageLearningEffectiveness']?.toStringAsFixed(1) ?? 'N/A'}/10
+   • Average Concept Clarity: ${learning['averageConceptClarity']?.toStringAsFixed(1) ?? 'N/A'}/10
+   • Users Rating 8+ (Effective): ${learning['percentAbove8']?.toStringAsFixed(1) ?? 'N/A'}%
+
+2. COMMERCIAL VALIDATION
+   • Product-Market Fit Score: ${commercial['pmfScore']?.toStringAsFixed(1) ?? 'N/A'}% (Target: >40%)
+   • Net Promoter Score: ${commercial['npsScore'] ?? 'N/A'} (Target: >50)
+   • Avg Willingness to Pay: \$${commercial['averageWillingnessToPayMonthly']?.toStringAsFixed(2) ?? 'N/A'}/month
+
+3. USER ENGAGEMENT
+   • Average Engagement Score: ${engagement['averageEngagementScore']?.toStringAsFixed(1) ?? 'N/A'}/10
+   • High Engagement Rate: ${engagement['highEngagementPercentage']?.toStringAsFixed(1) ?? 'N/A'}%
+   • Total Episode Completions: ${engagement['totalEpisodeCompletions'] ?? 'N/A'}
+
+4. SATISFACTION
+   • Average Satisfaction: ${satisfaction['averageSatisfaction']?.toStringAsFixed(1) ?? 'N/A'}/10
+   • High Satisfaction Rate: ${satisfaction['highSatisfactionPercentage']?.toStringAsFixed(1) ?? 'N/A'}%
+
+🎯 RESEARCH CONCLUSION:
+${_getResearchConclusion(learning, commercial, engagement, satisfaction)}
+
+📈 INVESTOR METRICS:
+• PMF Score: ${commercial['pmfScore']?.toStringAsFixed(1) ?? 'N/A'}% ${(commercial['pmfScore'] ?? 0) > 40 ? '✅ STRONG' : '⚠️ NEEDS IMPROVEMENT'}
+• NPS: ${commercial['npsScore'] ?? 'N/A'} ${(commercial['npsScore'] ?? 0) > 50 ? '✅ EXCELLENT' : (commercial['npsScore'] ?? 0) > 0 ? '⚠️ GOOD' : '❌ POOR'}
+• Learning Effectiveness: ${learning['averageLearningEffectiveness']?.toStringAsFixed(1) ?? 'N/A'}/10 ${(learning['averageLearningEffectiveness'] ?? 0) > 7.5 ? '✅ STRONG' : '⚠️ MODERATE'}
+
+📋 Next Steps: ${_getNextSteps(metrics)}
+    ''';
+  }
+
+  String _getResearchConclusion(Map<String, dynamic> learning, Map<String, dynamic> commercial, Map<String, dynamic> engagement, Map<String, dynamic> satisfaction) {
+    final learningScore = learning['averageLearningEffectiveness'] ?? 0;
+    final pmfScore = commercial['pmfScore'] ?? 0;
+    final engagementScore = engagement['averageEngagementScore'] ?? 0;
+    
+    if (learningScore > 7.5 && pmfScore > 40 && engagementScore > 7.5) {
+      return "STRONG VALIDATION: Conversational learning method shows significant effectiveness with strong commercial viability.";
+    } else if (learningScore > 6.5 && pmfScore > 20) {
+      return "MODERATE VALIDATION: Method shows promise but requires optimization for stronger market validation.";
+    } else {
+      return "EARLY STAGE: Collect more data and optimize user experience before drawing conclusions.";
+    }
+  }
+
+  String _getNextSteps(Map<String, dynamic> metrics) {
+    final totalUsers = metrics['totalUsers'] ?? 0;
+    final commercial = metrics['commercialValidation'] as Map<String, dynamic>;
+    final pmfScore = commercial['pmfScore'] ?? 0;
+    
+    if (totalUsers < 50) {
+      return "1. Recruit more users (target: 100+) 2. Gather more feedback data 3. Optimize onboarding";
+    } else if (pmfScore < 40) {
+      return "1. Improve product-market fit 2. Enhance user experience 3. Validate pricing strategy";
+    } else {
+      return "1. Scale user acquisition 2. Prepare investor deck 3. Optimize monetization";
+    }
+  }
+
+  /// 📊 Show Metrics Summary Dialog
+  void _showMetricsSummary(Map<String, dynamic> metrics) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('📊 Essential Metrics Summary'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total Users: ${metrics['totalUsers']}'),
+              const SizedBox(height: 16),
+              
+              const Text('🎯 Learning Effectiveness:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• Concept Clarity: ${(metrics['learningEffectiveness']['averageConceptClarity'] ?? 0).toStringAsFixed(1)}/10'),
+              Text('• Learning Effectiveness: ${(metrics['learningEffectiveness']['averageLearningEffectiveness'] ?? 0).toStringAsFixed(1)}/10'),
+              const SizedBox(height: 16),
+              
+              const Text('💰 Commercial Validation:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• PMF Score: ${(metrics['commercialValidation']['pmfScore'] ?? 0).toStringAsFixed(1)}%'),
+              Text('• NPS: ${metrics['commercialValidation']['npsScore'] ?? 'N/A'}'),
+              Text('• Willingness to Pay: \$${(metrics['commercialValidation']['averageWillingnessToPayMonthly'] ?? 0).toStringAsFixed(2)}/month'),
+              const SizedBox(height: 16),
+              
+              const Text('📈 Engagement:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• Avg Engagement: ${(metrics['engagementMetrics']['averageEngagementScore'] ?? 0).toStringAsFixed(1)}/10'),
+              Text('• High Engagement: ${(metrics['engagementMetrics']['highEngagementPercentage'] ?? 0).toStringAsFixed(1)}%'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
-  void _exportUserData() {
-    // TODO: Export user demographics and profiles
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('User data export initiated')),
-    );
-  }
-
-  void _exportFeedbackData() {
-    // TODO: Export all feedback responses
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Feedback data export initiated')),
-    );
-  }
-
-  void _exportAnalyticsReport() {
-    // TODO: Generate comprehensive analytics report
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Analytics report generation initiated')),
-    );
+  /// 📄 Export Raw Data
+  Future<void> _exportRawData() async {
+    final metrics = await EssentialMetricsExporter.getEssentialMetrics();
+    final rawData = metrics['rawData'];
+    
+    final jsonString = const JsonEncoder.withIndent('  ').convert(rawData);
+    await Clipboard.setData(ClipboardData(text: jsonString));
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Raw research data copied to clipboard!'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 }

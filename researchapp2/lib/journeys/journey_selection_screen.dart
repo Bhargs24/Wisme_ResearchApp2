@@ -5,6 +5,7 @@ import '../models/journey_models.dart';
 import '../core/research_metrics_provider.dart';
 import '../services/audio_manifest_service.dart';
 import '../core/firebase_service.dart';
+import 'journey_level_assessment_screen.dart';
 import 'package:provider/provider.dart';
 
 class JourneySelectionScreen extends StatefulWidget {
@@ -61,23 +62,21 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
 
   IconData _getIconFromName(String iconName) {
     switch (iconName) {
-      case 'code': return Icons.code;
-      case 'psychology': return Icons.psychology;
-      case 'science': return Icons.science;
-      case 'money': return Icons.attach_money;
-      case 'computer': return Icons.computer;
-      case 'storage': return Icons.storage;
-      case 'account_balance': return Icons.account_balance;
+      case 'code': return Icons.code;              // Computer Science
+      case 'psychology': return Icons.psychology;  // Psychology  
+      case 'science': return Icons.science;        // Science
+      case 'money': return Icons.attach_money;     // Life Skills (Personal Finance)
       default: return Icons.school;
     }
   }
 
   void _onJourneySelected(Journey journey) {
-    // Navigate to audio player with journey data
-    Navigator.pushNamed(
-      context, 
-      '/audio_player',
-      arguments: journey,
+    // Navigate to journey level assessment (start of personalization flow)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JourneyLevelAssessmentScreen(journey: journey),
+      ),
     );
   }
 
@@ -111,15 +110,8 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
                   style: AppTextStyles.heading2.copyWith(fontSize: 18),
                 ),
                 background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.primaryBlueLight,
-                        AppColors.backgroundDark,
-                      ],
-                    ),
+                  decoration: const BoxDecoration(
+                    color: AppColors.backgroundDark,
                   ),
                 ),
               ),
@@ -384,19 +376,19 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              AppColors.primaryBlue.withOpacity(0.2),
-                              AppColors.primaryBlue.withOpacity(0.1),
-                            ],
-                          ),
+                          color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: AppColors.primaryBlue.withOpacity(0.3),
                             style: BorderStyle.solid,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
                           children: [
@@ -563,23 +555,23 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
               child: Opacity(
                 opacity: safeOpacity,
                 child: GestureDetector(
-                  onTap: () => _showJourneyDetails(journey),
+                  onTap: () => _onJourneySelected(journey),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color.withOpacity(0.15),
-                          color.withOpacity(0.05),
-                        ],
-                      ),
+                      color: AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: color.withOpacity(0.3),
                         width: 1,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(20),
@@ -649,200 +641,6 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
                   ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showJourneyDetails(Journey journey) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: AppColors.backgroundDark,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white30,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: _getColorFromHex(journey.colorHex).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Icon(
-                                _getIconFromName(journey.iconName),
-                                size: 30,
-                                color: _getColorFromHex(journey.colorHex),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    journey.title,
-                                    style: AppTextStyles.heading1.copyWith(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${journey.episodeIds.length} episodes',
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'About this Journey',
-                          style: AppTextStyles.heading2.copyWith(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          journey.description,
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: Colors.white70,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Episodes (${journey.episodeIds.length})',
-                          style: AppTextStyles.heading2.copyWith(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ...journey.episodeIds.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.backgroundCard.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _getColorFromHex(journey.colorHex).withOpacity(0.3),
-                              ),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              leading: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: _getColorFromHex(journey.colorHex).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: AppTextStyles.heading2.copyWith(
-                                      color: _getColorFromHex(journey.colorHex),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                'Episode ${index + 1}',
-                                style: AppTextStyles.heading2.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Learning content for ${journey.title}',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              trailing: const Icon(
-                                Icons.play_circle_outline,
-                                color: Colors.white70,
-                              ),
-                              onTap: () {
-                                Navigator.pop(context);
-                                _onJourneySelected(journey);
-                              },
-                            ),
-                          );
-                        }),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _onJourneySelected(journey);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _getColorFromHex(journey.colorHex),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Start Journey',
-                              style: AppTextStyles.heading2.copyWith(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 100),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
           );
         },

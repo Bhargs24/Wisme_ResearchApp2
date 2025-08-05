@@ -4,7 +4,7 @@ class PlaceholderDataService {
   static List<Journey> getJourneys() {
     return [
       Journey(
-        id: 'dsa',
+        id: 'data_structures_algorithms',
         title: 'Data Structures & Algorithms',
         category: 'Computer Science',
         description: 'Master the fundamentals of computer science through engaging conversations and hands-on practice.',
@@ -34,7 +34,7 @@ class PlaceholderDataService {
         colorHex: '#45B7D1',
       ),
       Journey(
-        id: 'finance',
+        id: 'personal_finance',
         title: 'Personal Finance Mastery',
         category: 'Finance',
         description: 'Build a strong financial foundation with practical money management skills.',
@@ -51,7 +51,7 @@ class PlaceholderDataService {
       // DSA Episodes
       Episode(
         id: 'dsa_1',
-        journeyId: 'dsa',
+        journeyId: 'data_structures_algorithms',
         title: 'Understanding Arrays & Their Magic',
         description: 'Discover how arrays work and why they\'re fundamental to programming.',
         audioUrl: 'dsa/episode_1_conversational.mp3',
@@ -62,7 +62,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'dsa_2',
-        journeyId: 'dsa',
+        journeyId: 'data_structures_algorithms',
         title: 'Linked Lists: Building Chains of Data',
         description: 'Learn how linked lists connect data in flexible ways.',
         audioUrl: 'dsa/episode_2_conversational.mp3',
@@ -73,7 +73,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'dsa_3',
-        journeyId: 'dsa',
+        journeyId: 'data_structures_algorithms',
         title: 'Stacks & Queues: Order Matters',
         description: 'Understand how stacks and queues manage data order.',
         audioUrl: 'dsa/episode_3_conversational.mp3',
@@ -84,7 +84,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'dsa_4',
-        journeyId: 'dsa',
+        journeyId: 'data_structures_algorithms',
         title: 'Trees: Branching Out Your Data',
         description: 'Explore how tree structures organize information hierarchically.',
         audioUrl: 'dsa/episode_4_conversational.mp3',
@@ -95,7 +95,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'dsa_5',
-        journeyId: 'dsa',
+        journeyId: 'data_structures_algorithms',
         title: 'Hash Tables: Lightning Fast Lookups',
         description: 'Discover the power of hash tables for quick data retrieval.',
         audioUrl: 'dsa/episode_5_conversational.mp3',
@@ -106,7 +106,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'dsa_6',
-        journeyId: 'dsa',
+        journeyId: 'data_structures_algorithms',
         title: 'Sorting Algorithms: Bringing Order to Chaos',
         description: 'Learn how different sorting algorithms organize data efficiently.',
         audioUrl: 'dsa/episode_6_conversational.mp3',
@@ -233,7 +233,7 @@ class PlaceholderDataService {
       // Finance Episodes
       Episode(
         id: 'finance_1',
-        journeyId: 'finance',
+        journeyId: 'personal_finance',
         title: 'Money Mindset: Your Relationship with Money',
         description: 'Discover how your beliefs about money impact your financial decisions.',
         audioUrl: 'finance/episode_1_conversational.mp3',
@@ -244,7 +244,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'finance_2',
-        journeyId: 'finance',
+        journeyId: 'personal_finance',
         title: 'Budgeting Made Simple',
         description: 'Learn practical budgeting strategies that actually work.',
         audioUrl: 'finance/episode_2_conversational.mp3',
@@ -255,7 +255,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'finance_3',
-        journeyId: 'finance',
+        journeyId: 'personal_finance',
         title: 'Emergency Funds: Your Financial Safety Net',
         description: 'Build a solid emergency fund to protect your financial future.',
         audioUrl: 'finance/episode_3_conversational.mp3',
@@ -266,7 +266,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'finance_4',
-        journeyId: 'finance',
+        journeyId: 'personal_finance',
         title: 'Investing Basics: Growing Your Money',
         description: 'Start your investment journey with confidence and knowledge.',
         audioUrl: 'finance/episode_4_conversational.mp3',
@@ -277,7 +277,7 @@ class PlaceholderDataService {
       ),
       Episode(
         id: 'finance_5',
-        journeyId: 'finance',
+        journeyId: 'personal_finance',
         title: 'Debt Management Strategies',
         description: 'Master effective strategies to eliminate debt and stay debt-free.',
         audioUrl: 'finance/episode_5_conversational.mp3',

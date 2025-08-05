@@ -319,14 +319,14 @@ class _TopicSuggestionScreenState extends State<TopicSuggestionScreen>
             child: Row(
               children: [
                 Icon(
-                  Icons.info_outline,
+                  Icons.lightbulb_outline,
                   color: AppColors.accentGreen,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'This is demo research data - suggestions help validate user interest in conversational learning',
+                    'Your suggestions help shape future learning content - share what you\'d love to learn about',
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.accentGreen,
                       fontSize: 11,

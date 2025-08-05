@@ -7,6 +7,7 @@ import '../services/progress_persistence_service.dart';
 import '../services/audio_manifest_service.dart';
 import 'package:provider/provider.dart';
 import '../core/research_metrics_provider.dart';
+import '../feedback/simple_episode_feedback_screen.dart';
 
 class AudioPlayerScreen extends StatefulWidget {
   const AudioPlayerScreen({super.key});
@@ -73,14 +74,15 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
         _loadJourneyContent();
       }
     } else if (arguments is Map<String, dynamic>) {
-      // Resume functionality with specific episode
+      // Enhanced arguments with specific episode or resume functionality
       final journey = arguments['journey'] as Journey?;
       final autoResume = arguments['autoResume'] as bool? ?? false;
+      final startWithEpisodeId = arguments['startWithEpisode'] as String?;
       
       if (journey != null && (_journey == null || journey != _journey)) {
         _journey = journey;
         _autoResumeRequested = autoResume;
-        _loadJourneyContent();
+        _loadJourneyContent(startWithEpisodeId: startWithEpisodeId);
       }
     }
   }
@@ -101,8 +103,8 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
         });
       }
       
-      // Auto-save position every 10 seconds for resume functionality
-      if (_currentEpisode != null && position.inSeconds % 10 == 0) {
+      // Auto-save position every 5 seconds for better resume functionality
+      if (_currentEpisode != null && position.inSeconds % 5 == 0 && position.inSeconds > 0) {
         _saveProgress();
       }
     });
@@ -121,7 +123,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
     });
   }
 
-  Future<void> _loadJourneyContent() async {
+  Future<void> _loadJourneyContent({String? startWithEpisodeId}) async {
     if (_journey == null) return;
     
     if (mounted) {
@@ -140,7 +142,17 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
       }
 
       if (_episodes.isNotEmpty) {
-        _currentEpisode = _episodes[0];
+        // Find the starting episode (either specific episode or first episode)
+        if (startWithEpisodeId != null) {
+          final targetEpisode = _episodes.firstWhere(
+            (ep) => ep.id == startWithEpisodeId,
+            orElse: () => _episodes[0], // Fallback to first episode
+          );
+          _currentEpisode = targetEpisode;
+        } else {
+          _currentEpisode = _episodes[0];
+        }
+        
         await _loadEpisode(_currentEpisode!);
         
         // Handle auto-resume if requested
@@ -163,30 +175,30 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
     if (_journey == null) return;
     
     try {
-      print('DEBUG: Attempting to load audio from path: ${episode.audioUrl}');
-      
       // Use only asset loading with proper error handling
       await _audioPlayer.setAsset(episode.audioUrl);
-      print('DEBUG: Successfully loaded audio asset: ${episode.audioUrl}');
       
       _currentEpisode = episode;
       _currentEpisodeIndex = _episodes.indexOf(episode);
+      
+      // Always check for saved progress and resume automatically
+      await _checkAndResumeProgress();
       
       // Track episode start for research
       final research = Provider.of<ResearchMetricsProvider>(context, listen: false);
       research.trackAudioEngagement(
         episodeId: episode.id,
-        action: 'play',
-        position: 0,
+        action: 'load',
+        position: _position.inSeconds,
         speed: _playbackSpeed,
         additionalData: {
           'journeyId': _journey!.id,
           'audioLength': _duration.inSeconds,
+          'resumed': _position.inSeconds > 0,
         },
       );
     } catch (e) {
       print('ERROR loading episode: $e');
-      print('DEBUG: Failed path was: ${episode.audioUrl}');
       // Show error to user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Audio file not found: ${episode.title}')),
@@ -198,6 +210,8 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
     if (_isPlaying) {
       await _audioPlayer.pause();
       _trackAudioAction('pause');
+      // Save progress immediately when pausing
+      await _saveProgress();
     } else {
       await _audioPlayer.play();
       _trackAudioAction('play');
@@ -234,16 +248,20 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
     }
   }
   
-  void _rewind10Seconds() {
+  void _rewind10Seconds() async {
     final newPosition = Duration(seconds: (_position.inSeconds - 10).clamp(0, _duration.inSeconds));
-    _audioPlayer.seek(newPosition);
+    await _audioPlayer.seek(newPosition);
     _trackAudioAction('rewind_10');
+    // Save progress after seeking
+    await _saveProgress();
   }
   
-  void _forward10Seconds() {
+  void _forward10Seconds() async {
     final newPosition = Duration(seconds: (_position.inSeconds + 10).clamp(0, _duration.inSeconds));
-    _audioPlayer.seek(newPosition);
+    await _audioPlayer.seek(newPosition);
     _trackAudioAction('forward_10');
+    // Save progress after seeking
+    await _saveProgress();
   }
 
   void _changePlaybackSpeed() {
@@ -330,6 +348,37 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
     }
   }
   
+  Future<void> _checkAndResumeProgress() async {
+    if (_currentEpisode == null) return;
+    
+    try {
+      final savedPosition = await ProgressPersistenceService.getEpisodePosition(_currentEpisode!.id);
+      if (savedPosition != null) {
+        final positionSeconds = savedPosition['positionSeconds'] as int? ?? 0;
+        final isCompleted = savedPosition['isCompleted'] as bool? ?? false;
+        
+        // Resume from saved position unless it's completed or very short progress
+        if (!isCompleted && positionSeconds > 10) {
+          await _audioPlayer.seek(Duration(seconds: positionSeconds));
+          print('✅ Auto-resumed episode "${_currentEpisode!.title}" from ${positionSeconds}s');
+          
+          // Show subtle resume indicator
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Resumed from ${_formatDuration(Duration(seconds: positionSeconds))}'),
+                backgroundColor: AppColors.accentGreen,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('Error checking saved progress: $e');
+    }
+  }
+  
   Future<void> _handleEpisodeCompletion() async {
     if (_currentEpisode == null || _journey == null) return;
     
@@ -359,8 +408,13 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
       if (_currentEpisode!.order == 1) {
         if (research.shouldShowFirstEpisodeFeedback) {
           research.markFirstEpisodeFeedbackShown();
-          // Navigate to first episode feedback screen
-          Navigator.pushNamed(context, '/first_episode_feedback');
+          // Navigate to simple episode feedback screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SimpleEpisodeFeedbackScreen(episodeNumber: "1"),
+            ),
+          );
           return; // Don't auto-advance if showing feedback
         }
       }
@@ -370,8 +424,13 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
         final hasShownThirdEpisodeFeedback = await ProgressPersistenceService.hasShownThirdEpisodeFeedback();
         if (!hasShownThirdEpisodeFeedback) {
           await ProgressPersistenceService.markThirdEpisodeFeedbackShown();
-          // Navigate to third episode feedback screen
-          Navigator.pushNamed(context, '/third_episode_feedback');
+          // Navigate to simple episode feedback screen for episode 3
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SimpleEpisodeFeedbackScreen(episodeNumber: "3"),
+            ),
+          );
           return; // Don't auto-advance if showing feedback
         }
       }
@@ -477,9 +536,11 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
                       Slider(
                         value: _position.inMilliseconds.toDouble(),
                         max: _duration.inMilliseconds.toDouble(),
-                        onChanged: (value) {
-                          _audioPlayer.seek(Duration(milliseconds: value.toInt()));
+                        onChanged: (value) async {
+                          await _audioPlayer.seek(Duration(milliseconds: value.toInt()));
                           _trackAudioAction('seek');
+                          // Save progress immediately when seeking
+                          await _saveProgress();
                         },
                         activeColor: AppColors.accentGreen,
                         inactiveColor: AppColors.textSecondary.withOpacity(0.3),
@@ -626,10 +687,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen>
 
   IconData _getIconFromName(String iconName) {
     switch (iconName) {
-      case 'code': return Icons.code;
-      case 'computer': return Icons.computer;
-      case 'storage': return Icons.storage;
-      case 'account_balance_wallet': return Icons.account_balance_wallet;
+      case 'code': return Icons.code;              // Computer Science
+      case 'psychology': return Icons.psychology;  // Psychology  
+      case 'science': return Icons.science;        // Science
+      case 'money': return Icons.attach_money;     // Life Skills (Personal Finance)
       default: return Icons.school;
     }
   }

@@ -23,7 +23,7 @@ import 'progress/learning_progress_screen.dart';
 import 'progress/progress_visualization_screen.dart';
 import 'feedback/feedback_navigation_screen.dart';
 import 'feedback/journey_completion_screen.dart';
-import 'feedback/first_episode_feedback_screen.dart';
+import 'feedback/simple_episode_feedback_screen.dart';
 import 'feedback/third_episode_feedback_screen.dart';
 import 'feedback/journey_pmf_validation_screen.dart';
 import 'research/research_analytics_dashboard.dart';
@@ -38,6 +38,7 @@ import 'community/topic_suggestion_screen.dart';
 import 'community/community_requests_screen.dart';
 import 'core/app_shell.dart';
 import 'admin/admin_login_screen.dart';
+import 'services/progress_persistence_service.dart'; // ADD MISSING IMPORT
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +49,15 @@ void main() async {
   try {
     // Initialize Firebase
     print('Initializing Firebase...');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
+    
+    // 🔥 CRITICAL: Initialize Progress Persistence Service for cross-device sync
+    print('Initializing Progress Persistence Service...');
+    await ProgressPersistenceService.initialize();
+    print('Progress Persistence Service initialized successfully');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -191,7 +201,7 @@ class WismeResearchDemoApp extends StatelessWidget {
               final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
               return JourneyCompletionScreen(completedJourney: args ?? {});
             },
-            '/first_episode_feedback': (context) => const FirstEpisodeFeedbackScreen(),
+            '/first_episode_feedback': (context) => const SimpleEpisodeFeedbackScreen(episodeNumber: "1"),
             '/third_episode_feedback': (context) => const ThirdEpisodeFeedbackScreen(),
             '/journey_pmf_validation': (context) => const JourneyPMFValidationScreen(),
             '/research_analytics': (context) => const ResearchAnalyticsDashboard(),
