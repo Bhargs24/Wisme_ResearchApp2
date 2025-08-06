@@ -7,13 +7,13 @@ import 'core/research_metrics_provider.dart';
 import 'gamification/gamification_provider.dart'; // ADD MISSING GAMIFICATION PROVIDER
 import 'core/initial_admin_setup.dart';
 import 'theme/app_theme.dart';
-import 'onboarding/research_intro_screen.dart';
-import 'onboarding/auth_screen.dart';
 import 'onboarding/enhanced_auth_screen.dart';
+import 'onboarding/auth_screen.dart';
+import 'onboarding/research_purpose_screen.dart';
 import 'onboarding/welcome_screen.dart';
 import 'features/full_app_preview_screen.dart';
 import 'onboarding/consent_screen.dart';
-import 'onboarding/onboarding_screen.dart';
+import 'onboarding/simple_onboarding_screen.dart';
 import 'onboarding/learning_style_assessment_screen.dart';
 import 'onboarding/onboarding_complete_screen.dart';
 import 'journeys/journey_orientation_screen.dart';
@@ -38,6 +38,7 @@ import 'community/topic_suggestion_screen.dart';
 import 'community/community_requests_screen.dart';
 import 'core/app_shell.dart';
 import 'admin/admin_login_screen.dart';
+import 'debug/debug_profile_screen.dart';
 import 'services/progress_persistence_service.dart'; // ADD MISSING IMPORT
 
 void main() async {
@@ -57,11 +58,7 @@ void main() async {
     // 🔥 CRITICAL: Initialize Progress Persistence Service for cross-device sync
     print('Initializing Progress Persistence Service...');
     await ProgressPersistenceService.initialize();
-    print('Progress Persistence Service initialized successfully');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('✅ Firebase initialized successfully');
+    print('✅ Progress Persistence Service initialized successfully');
     
     // Set up initial admin configuration
     print('Setting up initial admin configuration...');
@@ -129,22 +126,28 @@ class WismeResearchDemoApp extends StatelessWidget {
     return Consumer2<AuthProvider, ResearchMetricsProvider>(
       builder: (context, auth, research, _) {
         print('Consumer builder called - Auth signed in: ${auth.isSignedIn}');
+        print('Auth initialized: ${auth.isAuthInitialized}, Profile loaded: ${auth.isProfileLoaded}');
         
-        // Show loading screen while auth is initializing
-        if (!auth.isAuthInitialized) {
+        // Show loading screen while auth is initializing OR profile is loading OR user is signed in but profile not loaded
+        if (!auth.isAuthInitialized || 
+            (auth.isSignedIn && !auth.isProfileLoaded) || 
+            (auth.isSignedIn && auth.userProfile == null && auth.isProfileLoaded)) {
           return MaterialApp(
             title: 'Wisme Research Demo',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme,
             home: Scaffold(
               backgroundColor: Colors.grey[900],
-              body: const Center(
+              body: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: Colors.green),
-                    SizedBox(height: 16),
-                    Text('Loading...', style: TextStyle(color: Colors.white)),
+                    const CircularProgressIndicator(color: Colors.green),
+                    const SizedBox(height: 16),
+                    Text(
+                      auth.isSignedIn ? 'Loading your profile...' : 'Initializing...',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -157,6 +160,7 @@ class WismeResearchDemoApp extends StatelessWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             try {
               research.setUserId(auth.user!.uid);
+              research.setAuthProvider(auth); // Pass auth provider for better persistence
             } catch (e) {
               print('Error setting user ID: $e');
             }
@@ -165,19 +169,33 @@ class WismeResearchDemoApp extends StatelessWidget {
         
         print('Creating MaterialApp...');
         
-        // FIXED: Determine correct home screen based on user profile completion
+        // FIXED: Determine correct home screen based on loaded user profile data
         Widget homeScreen;
-        if (auth.isSignedIn) {
-          // Check if user has completed onboarding
-          if (auth.userProfile != null && auth.userProfile!['onboardingComplete'] == true) {
-            homeScreen = const AppShell(); // User has completed all setup - use AppShell with navigation
-          } else if (auth.userProfile != null && auth.userProfile!['demographics'] != null) {
-            homeScreen = const AppShell(); // User has basic profile, skip re-asking - use AppShell
+        if (auth.isSignedIn && auth.userProfile != null) {
+          print('🔍 USER PROFILE CHECK:');
+          print('  - User profile exists: ${auth.userProfile != null}');
+          print('  - onboardingComplete: ${auth.userProfile?['onboardingComplete']}');
+          print('  - demographics: ${auth.userProfile?['demographics'] != null}');
+          print('  - profile: ${auth.userProfile?['profile'] != null}');
+          
+          // Check if user has completed onboarding based on saved profile data
+          final hasCompletedOnboarding = auth.userProfile?['onboardingComplete'] == true;
+          final hasDemographics = auth.userProfile?['demographics'] != null;
+          final hasProfile = auth.userProfile?['profile'] != null;
+          
+          if (hasCompletedOnboarding || (hasDemographics && hasProfile)) {
+            print('🏠 Routing to AppShell (onboarding complete from saved data)');
+            homeScreen = const AppShell(); // User has completed setup
           } else {
-            homeScreen = const ConsentScreen(); // First time user, need onboarding
+            print('🏠 Routing to ConsentScreen (incomplete onboarding)');
+            homeScreen = const ConsentScreen(); // Need to complete onboarding
           }
+        } else if (auth.isSignedIn && auth.userProfile == null) {
+          print('🏠 Routing to ConsentScreen (no profile data)');
+          homeScreen = const ConsentScreen(); // Signed in but no profile yet
         } else {
-          homeScreen = const ResearchIntroScreen(); // Not signed in
+          print('🏠 Routing to ResearchPurposeScreen (not signed in)');
+          homeScreen = const ResearchPurposeScreen(); // Start with research intro
         }
         
         return MaterialApp(
@@ -186,12 +204,13 @@ class WismeResearchDemoApp extends StatelessWidget {
           theme: AppTheme.darkTheme,
           home: homeScreen,
           routes: {
+            '/research_intro': (context) => const ResearchPurposeScreen(),
             '/auth': (context) => const EnhancedAuthScreen(),
             '/auth_legacy': (context) => const AuthScreen(),
             '/welcome': (context) => const WelcomeScreen(),
             '/home': (context) => const ModernHomeScreen(),
             '/consent': (context) => const ConsentScreen(),
-            '/onboarding': (context) => const OnboardingScreen(),
+            '/onboarding': (context) => const SimpleOnboardingScreen(),
             '/onboarding_complete': (context) => const OnboardingCompleteScreen(),
             '/learning_style': (context) => const LearningStyleAssessmentScreen(),
             '/journey_orientation': (context) => const JourneyOrientationScreen(),
@@ -219,6 +238,7 @@ class WismeResearchDemoApp extends StatelessWidget {
             '/final_research_survey': (context) => const FinalResearchSurveyScreen(),
             '/study_completion': (context) => const StudyCompletionScreen(),
             '/admin': (context) => const AdminLoginScreen(),
+            '/debug_profile': (context) => const DebugProfileScreen(),
             '/full_app_preview': (context) => const FullAppPreviewScreen(),
           },
         );

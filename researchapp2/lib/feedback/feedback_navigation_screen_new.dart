@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../core/research_metrics_provider.dart';
 import 'learning_method_comparison_screen.dart';
 import 'product_interest_screen.dart';
-import '../onboarding/onboarding_screen.dart';
+import '../gamification/edit_profile_screen.dart';
 import 'final_research_survey_screen.dart';
 
 class FeedbackNavigationScreen extends StatelessWidget {
@@ -49,7 +49,7 @@ class FeedbackNavigationScreen extends StatelessWidget {
                     _buildFeedbackCategory(context, 'Demographics & Usage', 'Update your profile and usage patterns', Icons.person, AppColors.primaryBlue, () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => OnboardingScreen()),
+                        MaterialPageRoute(builder: (context) => const EditProfileScreen()),
                       );
                     }),
                     const SizedBox(height: 16),

@@ -10,175 +10,202 @@ class LearningStyleAssessmentScreen extends StatefulWidget {
 }
 
 class _LearningStyleAssessmentScreenState extends State<LearningStyleAssessmentScreen> {
-  final Map<String, int> _currentLearningMethods = {
-    'Reading articles/books': 3, // Start with default middle values instead of 0
-    'Watching video tutorials': 3,
-    'Taking online courses': 3,
-    'Hands-on practice': 3,
-    'Group discussions': 3,
-    'AI-powered learning buddy': 3,
-  };
-  int _contentPreference = 3;
-  String? _sessionDuration;
-  List<String> _learningChallenges = [];
-
-  bool _isAssessmentComplete() {
-    // Now that we start with valid defaults, we only need to check required selections
-    return _sessionDuration != null && _learningChallenges.isNotEmpty;
-  }
-
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  final int _totalPages = 3;
+  
+  // Learning style preferences
+  String _preferredPace = '';
+  String _learningMethod = '';
+  String _contentDepth = '';
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Learning Style')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+      appBar: AppBar(
+        title: Text('Learning Style Assessment'),
+        leading: _currentPage > 0 
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: _previousPage,
+            )
+          : null,
+      ),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) => setState(() => _currentPage = index),
+        children: [
+          _buildPacePreferencePage(),
+          _buildMethodPreferencePage(),
+          _buildDepthPreferencePage(),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        child: Row(
           children: [
-            Text('Understanding Your Learning Preferences', style: AppTextStyles.heading1.copyWith(fontSize: 24)),
-            const SizedBox(height: 8),
-            Text('Help us understand how you currently learn best', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
-            const SizedBox(height: 32),
-            // Current learning methods
-            Semantics(
-              label: 'How do you typically learn new topics?',
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('How do you typically learn new topics?', style: AppTextStyles.heading2.copyWith(fontSize: 18)),
-                    const SizedBox(height: 4),
-                    Text('Rate each method from 1 (never use) to 5 (use frequently). Default is 3 (moderate use).',
-                         style: AppTextStyles.caption.copyWith(color: Colors.white70)),
-                  ],
-                ),
+            Expanded(
+              child: LinearProgressIndicator(
+                value: (_currentPage + 1) / _totalPages,
+                backgroundColor: Colors.grey[300],
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
               ),
             ),
-            const SizedBox(height: 8),
-            ..._currentLearningMethods.keys.map((method) => Semantics(
-              label: 'Rate $method from 1 to 5',
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: Text(method)),
-                      Text('${_currentLearningMethods[method]}', 
-                           style: TextStyle(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Text('1', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      Expanded(
-                        child: Slider(
-                          value: _currentLearningMethods[method]!.toDouble(),
-                          min: 1,
-                          max: 5,
-                          divisions: 4,
-                          label: _currentLearningMethods[method]!.toString(),
-                          onChanged: (val) {
-                            setState(() {
-                              _currentLearningMethods[method] = val.toInt();
-                            });
-                          },
-                        ),
-                      ),
-                      Text('5', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            )),
-            const SizedBox(height: 24),
-            // Content preference
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('How do you prefer to consume learning content?', style: AppTextStyles.heading2.copyWith(fontSize: 18)),
-            ),
-            const SizedBox(height: 8),
-            Slider(
-              value: _contentPreference.toDouble(),
-              min: 1,
-              max: 5,
-              divisions: 4,
-              label: ['Text Heavy', '', 'Balanced', '', 'Audio Heavy'][_contentPreference - 1],
-              onChanged: (val) => setState(() => _contentPreference = val.toInt()),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text('Text Heavy'),
-                Text('Balanced'),
-                Text('Audio Heavy'),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // Session duration
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('What\'s your typical learning session duration?', style: AppTextStyles.heading2.copyWith(fontSize: 18)),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                {'label': '5-10 minutes', 'value': '5-10'},
-                {'label': '15-30 minutes', 'value': '15-30'},
-                {'label': '45-60 minutes', 'value': '45-60'},
-                {'label': '60+ minutes', 'value': '60+'},
-              ].map((option) => ChoiceChip(
-                label: Text(option['label']!),
-                selected: _sessionDuration == option['value'],
-                onSelected: (_) => setState(() => _sessionDuration = option['value']),
-              )).toList(),
-            ),
-            const SizedBox(height: 24),
-            // Learning challenges
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('What are your biggest challenges with learning? (Select all that apply)', style: AppTextStyles.heading2.copyWith(fontSize: 18)),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                'Hard to stay focused/engaged',
-                'Information overload',
-                'Boring delivery methods',
-                'Hard to retain information',
-                'No personalization',
-                'Need shorter sessions',
-                'Lack of interactive elements',
-                'No progress tracking',
-              ].map((challenge) => FilterChip(
-                label: Text(challenge),
-                selected: _learningChallenges.contains(challenge),
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _learningChallenges.add(challenge);
-                    } else {
-                      _learningChallenges.remove(challenge);
-                    }
-                  });
-                },
-              )).toList(),
-            ),
-            const SizedBox(height: 32),
-            Semantics(
-              button: true,
-              label: 'Start Baseline Assessment',
-              child: ElevatedButton(
-                onPressed: _isAssessmentComplete() ? () => Navigator.pushNamed(context, '/onboarding_complete') : null,
-                style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
-                child: const Text('Start Baseline Assessment', style: TextStyle(fontSize: 18)),
-              ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: _canProceed() ? _nextPage : null,
+              child: Text(_currentPage == _totalPages - 1 ? 'Complete' : 'Next'),
             ),
           ],
         ),
       ),
     );
   }
-} 
+
+  bool _canProceed() {
+    switch (_currentPage) {
+      case 0: return _preferredPace.isNotEmpty;
+      case 1: return _learningMethod.isNotEmpty;
+      case 2: return _contentDepth.isNotEmpty;
+      default: return false;
+    }
+  }
+
+  void _nextPage() {
+    if (_currentPage < _totalPages - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _completeAssessment();
+    }
+  }
+
+  void _previousPage() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _completeAssessment() {
+    // Save learning style preferences and navigate to next screen
+    Navigator.pushReplacementNamed(context, '/journey_orientation');
+  }
+
+  Widget _buildPacePreferencePage() {
+    final options = [
+      {'value': 'quick', 'title': 'Quick Overview', 'description': 'Fast-paced, key concepts only'},
+      {'value': 'moderate', 'title': 'Balanced Pace', 'description': 'Good mix of theory and examples'},
+      {'value': 'detailed', 'title': 'Detailed Exploration', 'description': 'In-depth coverage with examples'},
+    ];
+
+    return _buildOptionPage(
+      title: 'What\'s your preferred learning pace?',
+      options: options,
+      selectedValue: _preferredPace,
+      onChanged: (value) => setState(() => _preferredPace = value),
+    );
+  }
+
+  Widget _buildMethodPreferencePage() {
+    final options = [
+      {'value': 'visual', 'title': 'Visual Learning', 'description': 'Diagrams, charts, and visual aids'},
+      {'value': 'auditory', 'title': 'Auditory Learning', 'description': 'Listening and verbal explanations'},
+      {'value': 'interactive', 'title': 'Interactive Learning', 'description': 'Hands-on practice and exercises'},
+    ];
+
+    return _buildOptionPage(
+      title: 'How do you learn best?',
+      options: options,
+      selectedValue: _learningMethod,
+      onChanged: (value) => setState(() => _learningMethod = value),
+    );
+  }
+
+  Widget _buildDepthPreferencePage() {
+    final options = [
+      {'value': 'conceptual', 'title': 'Conceptual Understanding', 'description': 'Focus on big picture and concepts'},
+      {'value': 'practical', 'title': 'Practical Application', 'description': 'Focus on real-world usage'},
+      {'value': 'theoretical', 'title': 'Theoretical Depth', 'description': 'Deep dive into underlying theory'},
+    ];
+
+    return _buildOptionPage(
+      title: 'What content depth do you prefer?',
+      options: options,
+      selectedValue: _contentDepth,
+      onChanged: (value) => setState(() => _contentDepth = value),
+    );
+  }
+
+  Widget _buildOptionPage({
+    required String title,
+    required List<Map<String, String>> options,
+    required String selectedValue,
+    required Function(String) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 40),
+          Text(
+            title,
+            style: AppTextStyles.heading1.copyWith(
+              color: Colors.white,
+              fontSize: 24,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: ListView(
+              children: options.map((option) {
+                final isSelected = selectedValue == option['value'];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: OutlinedButton(
+                    onPressed: () => onChanged(option['value']!),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: isSelected ? AppColors.primaryBlue.withValues(alpha: 0.1) : null,
+                      foregroundColor: isSelected ? AppColors.primaryBlue : Colors.white,
+                      side: BorderSide(
+                        color: isSelected ? AppColors.primaryBlue : Colors.grey.withValues(alpha: 0.3),
+                      ),
+                      minimumSize: const Size(double.infinity, 80),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            option['title']!,
+                            style: AppTextStyles.heading2.copyWith(
+                              color: isSelected ? AppColors.primaryBlue : Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            option['description']!,
+                            style: AppTextStyles.caption.copyWith(
+                              color: isSelected ? AppColors.primaryBlue.withValues(alpha: 0.8) : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

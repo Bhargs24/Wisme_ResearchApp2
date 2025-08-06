@@ -395,7 +395,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (auth.isAdmin) {
         Navigator.pushReplacementNamed(context, '/admin');
       } else {
-        Navigator.pushReplacementNamed(context, '/consent');
+        Navigator.pushReplacementNamed(context, '/onboarding');
       }
       
     } catch (e) {
@@ -442,7 +442,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 if (auth.isAdmin) {
                   Navigator.pushReplacementNamed(context, '/admin');
                 } else {
-                  Navigator.pushReplacementNamed(context, '/consent');
+                  Navigator.pushReplacementNamed(context, '/onboarding');
                 }
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(

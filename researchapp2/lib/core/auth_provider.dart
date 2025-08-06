@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'firebase_service.dart';
 import 'admin_service.dart';
 import '../services/progress_persistence_service.dart';
@@ -11,6 +13,10 @@ class AuthProvider extends ChangeNotifier {
   bool _isProfileLoaded = false;
   Map<String, dynamic>? _userProfile;
   bool? _isAdminUser; // Cache admin status
+  
+  // Local storage keys
+  static const String _userProfileKey = 'wisme_user_profile';
+  static const String _lastProfileSyncKey = 'wisme_last_profile_sync';
   
   AuthProvider() {
     print('AuthProvider constructor called');
@@ -65,10 +71,64 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _loadUserProfile() async {
+    print('🔍 Loading user profile for: ${_user?.uid}');
+    print('🔍 User email: ${_user?.email}');
+    print('🔍 Auth method: ${FirebaseService.getCurrentAuthMethod()}');
+    _isProfileLoaded = false; // Mark as loading
+    
     try {
       if (_user != null) {
-        final doc = await FirebaseService.getUserProfile(_user!.uid);
-        _userProfile = doc?.data() as Map<String, dynamic>?;
+        // First try to load from local storage for instant access
+        await _loadUserProfileFromLocal();
+        
+        // Then try to load from Firebase (with retries)
+        int attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+          try {
+            print('🔍 Profile load attempt ${attempts + 1}/$maxAttempts for UID: ${_user!.uid}');
+            final doc = await FirebaseService.getUserProfile(_user!.uid);
+            
+            if (doc != null && doc.exists) {
+              final firebaseProfile = doc.data() as Map<String, dynamic>?;
+              if (firebaseProfile != null) {
+                _userProfile = firebaseProfile;
+                // Save to local storage for next time
+                await _saveUserProfileToLocal();
+                print('✅ User profile loaded from Firebase: ${_userProfile?.keys}');
+                print('✅ Profile content: $_userProfile');
+              }
+              break;
+            } else {
+              print('⚠️ No profile document found in Firebase for user: ${_user!.uid}');
+              print('⚠️ Document exists: ${doc?.exists}');
+              print('⚠️ Document data: ${doc?.data()}');
+              
+              // Check if there's ANY profile document for this email
+              await _debugFindProfileByEmail();
+              
+              // Keep local profile if Firebase has none
+              if (_userProfile == null) {
+                print('⚠️ No local or Firebase profile, user needs onboarding');
+              } else {
+                print('⚠️ Using local profile: ${_userProfile?.keys}');
+              }
+              break;
+            }
+          } catch (e) {
+            attempts++;
+            print('❌ Profile load attempt $attempts failed: $e');
+            if (attempts >= maxAttempts) {
+              print('⚠️ Using local profile as fallback after Firebase failures');
+              // Keep whatever local profile we have
+              break;
+            }
+            // Wait before retry
+            await Future.delayed(Duration(milliseconds: 500 * attempts));
+          }
+        }
+        
         _isProfileLoaded = true;
         
         // Check admin status
@@ -77,11 +137,81 @@ class AuthProvider extends ChangeNotifier {
         // 🔥 CRITICAL: Load cross-device progress when user signs in
         await _loadCrossDeviceProgress();
         
-        print('✅ User profile loaded from Firebase');
+        print('✅ User profile loading complete');
+        notifyListeners(); // Always notify after profile loading
       }
     } catch (e) {
-      print('❌ Failed to load user profile: $e');
-      _isProfileLoaded = false;
+      print('❌ Failed to load user profile after retries: $e');
+      // Try to keep local profile if available, or create emergency profile
+      if (_userProfile == null) {
+        await _createEmergencyProfile();
+      }
+      _isProfileLoaded = true; // Mark as done even if failed
+      notifyListeners(); // Notify even on failure so UI can proceed
+    }
+  }
+
+  // Debug method to find profile by email if UID doesn't work
+  Future<void> _debugFindProfileByEmail() async {
+    if (_user?.email == null) return;
+    
+    try {
+      print('🔍 Searching for profile by email: ${_user!.email}');
+      final querySnapshot = await FirebaseService.firestore
+          .collection('users')
+          .where('email', isEqualTo: _user!.email)
+          .limit(1)
+          .get();
+          
+      if (querySnapshot.docs.isNotEmpty) {
+        final foundDoc = querySnapshot.docs.first;
+        print('⚠️ Found profile with different UID: ${foundDoc.id}');
+        print('⚠️ Current UID: ${_user!.uid}');
+        print('⚠️ Found profile data: ${foundDoc.data()}');
+        
+        // Use the found profile
+        _userProfile = Map<String, dynamic>.from(foundDoc.data());
+        await _saveUserProfileToLocal();
+        
+        // Update the profile to use current UID
+        await FirebaseService.createOrUpdateUserProfile(_user!.uid, _userProfile!);
+        print('✅ Migrated profile to current UID');
+      } else {
+        print('⚠️ No profile found by email either');
+      }
+    } catch (e) {
+      print('❌ Error searching profile by email: $e');
+    }
+  }
+
+  // Load user profile from local storage
+  Future<void> _loadUserProfileFromLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final profileJson = prefs.getString(_userProfileKey);
+      if (profileJson != null) {
+        _userProfile = Map<String, dynamic>.from(jsonDecode(profileJson));
+        print('✅ User profile loaded from local storage: ${_userProfile?.keys}');
+        print('✅ Local profile content: $_userProfile');
+      } else {
+        print('⚠️ No local profile found in SharedPreferences');
+      }
+    } catch (e) {
+      print('❌ Failed to load profile from local storage: $e');
+    }
+  }
+
+  // Save user profile to local storage
+  Future<void> _saveUserProfileToLocal() async {
+    try {
+      if (_userProfile != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_userProfileKey, jsonEncode(_userProfile));
+        await prefs.setString(_lastProfileSyncKey, DateTime.now().toIso8601String());
+        print('✅ User profile saved to local storage');
+      }
+    } catch (e) {
+      print('❌ Failed to save profile to local storage: $e');
     }
   }
 
@@ -98,6 +228,33 @@ class AuthProvider extends ChangeNotifier {
       // Don't fail the login process if progress sync fails
     }
   }
+
+  // Emergency profile recovery - creates minimal profile if none exists
+  Future<void> _createEmergencyProfile() async {
+    if (_user != null && _userProfile == null) {
+      try {
+        _userProfile = {
+          'profile': {
+            'firstName': 'User',
+            'lastName': '',
+            'displayName': 'User',
+            'fullName': 'User',
+            'createdAt': DateTime.now().toIso8601String(),
+          },
+          'emergencyProfile': true,
+          'needsOnboarding': true,
+        };
+        
+        // Save emergency profile to both local and Firebase
+        await _saveUserProfileToLocal();
+        await FirebaseService.createOrUpdateUserProfile(_user!.uid, _userProfile!);
+        
+        print('🚨 Emergency profile created');
+      } catch (e) {
+        print('❌ Failed to create emergency profile: $e');
+      }
+    }
+  }
   
   User? get user => _user;
   bool get isSignedIn => _user != null;
@@ -106,10 +263,64 @@ class AuthProvider extends ChangeNotifier {
   bool get isProfileLoaded => _isProfileLoaded;
   Map<String, dynamic>? get userProfile => _userProfile;
 
+  // Manual method to force reload profile (for debugging)
+  Future<void> forceReloadProfile() async {
+    print('🔄 Force reloading user profile...');
+    if (_user != null) {
+      _userProfile = null;
+      _isProfileLoaded = false;
+      notifyListeners();
+      await _loadUserProfile();
+    }
+  }
+
   // Public method to reload user profile (useful after profile updates)
   Future<void> reloadUserProfile() async {
     if (_user != null) {
       await _loadUserProfile();
+    }
+  }
+
+  // Update user profile data and save to both local and Firebase
+  Future<void> updateUserProfile(Map<String, dynamic> profileData) async {
+    if (_user != null) {
+      try {
+        _userProfile = {...(_userProfile ?? {}), ...profileData};
+        
+        // Save to Firebase first
+        await FirebaseService.createOrUpdateUserProfile(_user!.uid, _userProfile!);
+        
+        // Save to local storage as backup
+        await _saveUserProfileToLocal();
+        
+        print('✅ User profile updated and saved');
+        notifyListeners();
+      } catch (e) {
+        print('❌ Failed to update user profile: $e');
+        // Still save locally and notify UI
+        await _saveUserProfileToLocal();
+        notifyListeners();
+        rethrow;
+      }
+    }
+  }
+
+  // Clear all user data on sign out
+  Future<void> clearAllUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Clear user profile data
+      await prefs.remove(_userProfileKey);
+      await prefs.remove(_lastProfileSyncKey);
+      
+      // Clear progress data
+      await ProgressPersistenceService.clearAllProgress();
+      await ProgressPersistenceService.clearPersonalizationPreferences();
+      
+      print('✅ All user data cleared');
+    } catch (e) {
+      print('❌ Failed to clear user data: $e');
     }
   }
 
@@ -121,8 +332,9 @@ class AuthProvider extends ChangeNotifier {
       _user = await FirebaseService.signInWithGoogle();
       if (_user != null) {
         await _loadUserProfile();
+        // Ensure UI updates after profile loading
+        notifyListeners();
       }
-      notifyListeners();
     } catch (e) {
       print('Google sign-in failed: $e');
       rethrow;
@@ -140,6 +352,8 @@ class AuthProvider extends ChangeNotifier {
       _user = await FirebaseService.signInWithEmail(email, password);
       if (_user != null) {
         await _loadUserProfile();
+        // Ensure UI updates after profile loading
+        notifyListeners();
       }
     } catch (e) {
       print('Email sign-in failed: $e');
@@ -228,10 +442,18 @@ class AuthProvider extends ChangeNotifier {
   void signOut() async {
     try {
       await FirebaseService.auth.signOut();
+      
+      // Clear all user data comprehensively
+      await clearAllUserData();
+      
+      print('✅ Complete sign out and data cleanup');
     } catch (e) {
       print('Firebase sign-out failed: $e');
     }
     _user = null;
+    _userProfile = null;
+    _isProfileLoaded = false;
+    _isAdminUser = null;
     notifyListeners();
   }
 

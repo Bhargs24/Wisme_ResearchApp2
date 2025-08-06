@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'gamification_provider.dart';
 import '../core/auth_provider.dart';
 import '../core/research_metrics_provider.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -184,6 +185,56 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
+            
+            // User Profile Details Section
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Profile Details', style: AppTextStyles.heading2.copyWith(fontSize: 18)),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.edit, size: 16),
+                          label: const Text('Edit'),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    _buildProfileDetailRow('Age', '${research.userAge} years old'),
+                    _buildProfileDetailRow('Education', research.userEducation.isEmpty ? 'Not specified' : research.userEducation),
+                    _buildProfileDetailRow('Occupation', research.userOccupation.isEmpty ? 'Not specified' : research.userOccupation),
+                    if (research.userLearningGoals.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text('Learning Goals:', style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: research.userLearningGoals.map((goal) => Chip(
+                          label: Text(goal, style: const TextStyle(fontSize: 12)),
+                          backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
+                          side: BorderSide(color: AppColors.primaryBlue.withOpacity(0.3)),
+                        )).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
             // Stats
             Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -214,6 +265,30 @@ class ProfileScreen extends StatelessWidget {
         Text(value, style: AppTextStyles.heading2.copyWith(fontSize: 16)),
         Text(label, style: AppTextStyles.caption),
       ],
+    );
+  }
+
+  Widget _buildProfileDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTextStyles.caption,
+            ),
+          ),
+        ],
+      ),
     );
   }
 } 

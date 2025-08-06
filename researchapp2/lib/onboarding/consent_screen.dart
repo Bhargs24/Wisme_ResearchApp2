@@ -55,11 +55,11 @@ class _ConsentScreenState extends State<ConsentScreen> {
             const SizedBox(height: 24),
             Semantics(
               button: true,
-              label: 'Continue to Demographics',
+              label: 'Continue to Sign In',
               child: ElevatedButton(
-                onPressed: _consentGiven ? () => Navigator.pushNamed(context, '/onboarding') : null,
+                onPressed: _consentGiven ? () => Navigator.pushNamed(context, '/auth') : null,
                 style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
-                child: const Text('Continue to Demographics', style: TextStyle(fontSize: 18)),
+                child: const Text('Continue to Sign In', style: TextStyle(fontSize: 18)),
               ),
             ),
           ],

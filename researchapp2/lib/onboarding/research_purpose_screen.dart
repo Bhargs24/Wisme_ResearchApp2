@@ -2,41 +2,29 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-class ResearchIntroScreen extends StatefulWidget {
-  const ResearchIntroScreen({super.key});
+class ResearchPurposeScreen extends StatefulWidget {
+  const ResearchPurposeScreen({super.key});
 
   @override
-  State<ResearchIntroScreen> createState() => _ResearchIntroScreenState();
+  State<ResearchPurposeScreen> createState() => _ResearchPurposeScreenState();
 }
 
-class _ResearchIntroScreenState extends State<ResearchIntroScreen> {
+class _ResearchPurposeScreenState extends State<ResearchPurposeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<Map<String, dynamic>> _introPages = [
+  final List<Map<String, dynamic>> _pages = [
     {
-      'title': 'Welcome to Wisme Research',
-      'subtitle': 'Help us validate conversational learning',
-      'description': 'You\'re about to experience Wisme\'s conversational learning method. Learn through engaging conversational-style content that feels like listening to an educational podcast.',
+      'title': 'Welcome to Wisme',
+      'subtitle': 'A new way to learn',
+      'description': 'Experience learning through conversational audio content. Listen to topics explained like an engaging podcast.',
       'icon': Icons.psychology_outlined,
     },
     {
-      'title': 'This is a Research Demo',
-      'subtitle': 'Testing pure conversational learning',
-      'description': 'This demo focuses only on conversational learning to scientifically validate its effectiveness. The full Wisme app will have AI/ML models that learn with you and much more content.',
+      'title': 'Help Us Research',
+      'subtitle': 'Validate conversational learning',
+      'description': 'We\'re testing if conversational explanations work better than traditional methods. Your participation helps prove this.',
       'icon': Icons.science_outlined,
-    },
-    {
-      'title': 'Your Privacy Matters',
-      'subtitle': 'Secure and anonymous research',
-      'description': 'We collect minimal learning data purely for research. All data is anonymized. No personal information is shared. You can withdraw anytime.',
-      'icon': Icons.security_outlined,
-    },
-    {
-      'title': 'What We\'re Validating',
-      'subtitle': 'Conversational vs traditional learning',
-      'description': 'We\'re testing if conversational-style explanations deliver better engagement and knowledge retention compared to traditional lecture-based methods.',
-      'icon': Icons.insights_outlined,
     },
   ];
 
@@ -52,11 +40,11 @@ class _ResearchIntroScreenState extends State<ResearchIntroScreen> {
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: List.generate(
-                  _introPages.length,
+                  _pages.length,
                   (index) => Expanded(
                     child: Container(
                       height: 3,
-                      margin: EdgeInsets.only(right: index < _introPages.length - 1 ? 8 : 0),
+                      margin: EdgeInsets.only(right: index < _pages.length - 1 ? 8 : 0),
                       decoration: BoxDecoration(
                         color: index <= _currentPage 
                           ? AppColors.accentGreen 
@@ -74,9 +62,9 @@ class _ResearchIntroScreenState extends State<ResearchIntroScreen> {
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) => setState(() => _currentPage = index),
-                itemCount: _introPages.length,
+                itemCount: _pages.length,
                 itemBuilder: (context, index) {
-                  final page = _introPages[index];
+                  final page = _pages[index];
                   return Padding(
                     padding: const EdgeInsets.all(32),
                     child: Column(
@@ -147,13 +135,13 @@ class _ResearchIntroScreenState extends State<ResearchIntroScreen> {
 
                   ElevatedButton(
                     onPressed: () {
-                      if (_currentPage < _introPages.length - 1) {
+                      if (_currentPage < _pages.length - 1) {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
                       } else {
-                        Navigator.pushReplacementNamed(context, '/auth');
+                        Navigator.pushReplacementNamed(context, '/welcome');
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -164,7 +152,7 @@ class _ResearchIntroScreenState extends State<ResearchIntroScreen> {
                       ),
                     ),
                     child: Text(
-                      _currentPage < _introPages.length - 1 ? 'Continue' : 'Get Started',
+                      _currentPage < _pages.length - 1 ? 'Continue' : 'Get Started',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,

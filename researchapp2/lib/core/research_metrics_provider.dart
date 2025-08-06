@@ -19,6 +19,9 @@ class ResearchMetricsProvider extends ChangeNotifier {
   bool _hasShownFirstJourneyCompletion = false;
   bool _hasShownMultipleJourneyComparison = false;
   
+  // Reference to auth provider for data synchronization  
+  dynamic _authProvider;
+  
   // Getters
   String? get userId => _userId;
   Map<String, dynamic> get userProfile => _userProfile;
@@ -36,18 +39,29 @@ class ResearchMetricsProvider extends ChangeNotifier {
   // User Profile Helper Getters
   String get userDisplayName => _userProfile['profile']?['displayName'] ?? 'User';
   String get userFirstName => _userProfile['profile']?['firstName'] ?? '';
+  String get userLastName => _userProfile['profile']?['lastName'] ?? '';
   String get userFullName => _userProfile['profile']?['fullName'] ?? '';
   int get userAge => _userProfile['demographics']?['age'] ?? 0;
   String get userEducation => _userProfile['demographics']?['education'] ?? '';
   String get userOccupation => _userProfile['demographics']?['occupation'] ?? '';
   List<String> get userLearningGoals => List<String>.from(_userProfile['demographics']?['learningGoals'] ?? []);
   Map<String, int> get userSubjectFamiliarity => Map<String, int>.from(_userProfile['baseline']?['subjectFamiliarity'] ?? {});
+  
+  // Complete user profile data for editing
+  Map<String, dynamic> get userProfileData => {
+    'firstName': userFirstName,
+    'lastName': userLastName,
+    'age': userAge,
+    'education': userEducation,
+    'occupation': userOccupation,
+    'learningGoals': userLearningGoals,
+  };
 
   // CRITICAL: Profile completion status checks
   bool get hasCompletedDemographics => _userProfile['demographics'] != null;
-  bool get hasCompletedBaseline => _userProfile['baseline'] != null;
+  bool get hasCompletedBaseline => true; // Simplified: no baseline test required
   bool get hasName => _userProfile['profile']?['firstName'] != null;
-  bool get isOnboardingComplete => hasCompletedDemographics && hasCompletedBaseline;
+  bool get isOnboardingComplete => hasCompletedDemographics;
 
   void setUserId(String uid) {
     print('🔍 SETTING USER ID IN RESEARCH METRICS: $uid');
@@ -58,6 +72,11 @@ class ResearchMetricsProvider extends ChangeNotifier {
     _loadUserProfileAsync();
     
     notifyListeners();
+  }
+
+  // Set auth provider reference for data synchronization
+  void setAuthProvider(dynamic authProvider) {
+    _authProvider = authProvider;
   }
 
   // Separate async method to avoid blocking
@@ -107,13 +126,12 @@ class ResearchMetricsProvider extends ChangeNotifier {
   // STRATEGIC RESEARCH DATA COLLECTION
   // ============================================================================
 
-  // PHASE 1: DEMOGRAPHIC & BASELINE (Non-boring, integrated into onboarding)
+  // PHASE 1: SIMPLIFIED DEMOGRAPHIC COLLECTION
   void captureUserDemographics({
     required int age,
     required String education,
     required String occupation,
     required List<String> learningGoals,
-    required Map<String, int> subjectFamiliarity,
   }) {
     _userProfile.addAll({
       'demographics': {
@@ -123,11 +141,11 @@ class ResearchMetricsProvider extends ChangeNotifier {
         'learningGoals': learningGoals,
         'capturedAt': DateTime.now().toIso8601String(),
       },
-      'baseline': {
-        'subjectFamiliarity': subjectFamiliarity,
-        'overallLearningExperience': 0, // Will be set during onboarding
-      }
     });
+    
+    // Automatically mark onboarding as complete when demographics are captured
+    _userProfile['onboardingComplete'] = true;
+    
     _saveUserProfile();
     notifyListeners();
   }
@@ -144,39 +162,51 @@ class ResearchMetricsProvider extends ChangeNotifier {
       'fullName': '$firstName $lastName'.trim(),
       'createdAt': DateTime.now().toIso8601String(),
     };
+    
+    // Check if onboarding is now complete and set flag
+    if (isOnboardingComplete) {
+      _userProfile['onboardingComplete'] = true;
+    }
+    
     _saveUserProfile();
     notifyListeners();
   }
 
-  // COMPLETE USER PROFILE (Including name for personalization)
-  Future<void> captureUserProfile({
-    required String firstName,
-    required String lastName,
-    required int age,
-    required String education,
-    required String occupation,
-    required List<String> learningGoals,
-    required Map<String, int> subjectFamiliarity,
-  }) async {
-    _userProfile.addAll({
-      'profile': {
-        'firstName': firstName,
-        'lastName': lastName,
-        'displayName': '$firstName ${lastName.isNotEmpty ? lastName[0] : ''}',
-        'fullName': '$firstName $lastName'.trim(),
-      },
-      'demographics': {
-        'age': age,
-        'education': education,
-        'occupation': occupation,
-        'learningGoals': learningGoals,
-        'capturedAt': DateTime.now().toIso8601String(),
-      },
-      'baseline': {
-        'subjectFamiliarity': subjectFamiliarity,
-        'overallLearningExperience': 0,
-      }
-    });
+  // Update user profile data (for profile editing)
+  void updateUserProfile({
+    String? firstName,
+    String? lastName,
+    int? age,
+    String? education,
+    String? occupation,
+    List<String>? learningGoals,
+  }) {
+    // Update name if provided
+    if (firstName != null || lastName != null) {
+      if (_userProfile['profile'] == null) _userProfile['profile'] = {};
+      
+      if (firstName != null) _userProfile['profile']['firstName'] = firstName;
+      if (lastName != null) _userProfile['profile']['lastName'] = lastName;
+      
+      final updatedFirstName = _userProfile['profile']['firstName'] ?? '';
+      final updatedLastName = _userProfile['profile']['lastName'] ?? '';
+      
+      _userProfile['profile']['displayName'] = '$updatedFirstName ${updatedLastName.isNotEmpty ? updatedLastName[0] : ''}';
+      _userProfile['profile']['fullName'] = '$updatedFirstName $updatedLastName'.trim();
+    }
+    
+    // Update demographics if provided
+    if (age != null || education != null || occupation != null || learningGoals != null) {
+      if (_userProfile['demographics'] == null) _userProfile['demographics'] = {};
+      
+      if (age != null) _userProfile['demographics']['age'] = age;
+      if (education != null) _userProfile['demographics']['education'] = education;
+      if (occupation != null) _userProfile['demographics']['occupation'] = occupation;
+      if (learningGoals != null) _userProfile['demographics']['learningGoals'] = learningGoals;
+      
+      _userProfile['demographics']['updatedAt'] = DateTime.now().toIso8601String();
+    }
+    
     _saveUserProfile();
     notifyListeners();
   }
@@ -765,6 +795,22 @@ class ResearchMetricsProvider extends ChangeNotifier {
     if (_userId != null) {
       print('🔍 SAVING USER PROFILE TO FIREBASE - UserID: $_userId');
       print('🔍 Profile Data: ${_userProfile.keys}');
+      
+      // Try to save through auth provider for better persistence
+      if (_authProvider != null) {
+        try {
+          // Safely call updateUserProfile if it exists
+          if (_authProvider.runtimeType.toString().contains('AuthProvider')) {
+            _authProvider.updateUserProfile(_userProfile);
+            print('✅ Profile saved through AuthProvider');
+            return;
+          }
+        } catch (e) {
+          print('⚠️ AuthProvider save failed, falling back to direct Firebase: $e');
+        }
+      }
+      
+      // Fallback to direct Firebase save
       FirebaseService.createOrUpdateUserProfile(_userId!, _userProfile);
     } else {
       print('❌ CANNOT SAVE USER PROFILE - No userId set!');

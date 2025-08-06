@@ -158,15 +158,31 @@ class OfflineManager {
   /// Direct Firebase progress sync
   static Future<void> _syncProgressDirectly(Map<String, dynamic> data) async {
     try {
+      // Check if user is authenticated before syncing
+      final user = FirebaseService.auth.currentUser;
+      if (user == null) {
+        print('Sync skipped: No authenticated user');
+        return;
+      }
+      
       final episodeId = data['episodeId'] as String?;
       final progressData = data['progressData'] as Map<String, dynamic>?;
       
       if (episodeId != null && progressData != null) {
-        // Use Firebase service directly
+        // Include user ID in the data and use user-scoped document path
+        final enhancedProgressData = {
+          ...progressData,
+          'userId': user.uid,
+          'episodeId': episodeId,
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        
+        // Use Firebase service directly with user-scoped document
         await FirebaseService.firestore
             .collection('episode_progress')
-            .doc(episodeId)
-            .set(progressData, SetOptions(merge: true));
+            .doc('${user.uid}_$episodeId')
+            .set(enhancedProgressData, SetOptions(merge: true));
+        print('✅ Offline sync successful: $episodeId for user ${user.uid}');
       }
     } catch (e) {
       print('Failed to sync progress directly: $e');
@@ -177,6 +193,13 @@ class OfflineManager {
   /// Direct Firebase feedback submission
   static Future<void> _submitFeedbackDirectly(Map<String, dynamic> data) async {
     try {
+      // Check if user is authenticated before submitting
+      final user = FirebaseService.auth.currentUser;
+      if (user == null) {
+        print('Feedback submission skipped: No authenticated user');
+        return;
+      }
+      
       await FirebaseService.firestore
           .collection('feedback')
           .add(data);

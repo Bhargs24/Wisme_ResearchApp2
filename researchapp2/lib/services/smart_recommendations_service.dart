@@ -150,38 +150,14 @@ class SmartRecommendationsService {
     if (demographics != null) {
       final learningGoals = List<String>.from(demographics['learningGoals'] ?? []);
       
-      // Add trending topics based on popular learning goals
+      // Add topics based on actual user learning goals
       for (final goal in learningGoals.take(3)) {
-        switch (goal.toLowerCase()) {
-          case 'career advancement':
-            trendingTopics.addAll(['Leadership Skills', 'Project Management', 'Data Analysis']);
-            break;
-          case 'skill development':
-            trendingTopics.addAll(['Programming Basics', 'Digital Marketing', 'Design Thinking']);
-            break;
-          case 'personal growth':
-            trendingTopics.addAll(['Time Management', 'Communication Skills', 'Financial Literacy']);
-            break;
-          case 'academic learning':
-            trendingTopics.addAll(['Research Methods', 'Critical Thinking', 'Study Techniques']);
-            break;
-          default:
-            trendingTopics.add(goal);
-        }
+        // Add the actual goal as a trending topic
+        trendingTopics.add(goal);
       }
     }
     
-    // Add default trending if no user data
-    if (trendingTopics.isEmpty) {
-      trendingTopics = [
-        'Data Science Fundamentals',
-        'Effective Communication',
-        'Financial Planning',
-        'Problem Solving',
-        'Technology Trends',
-      ];
-    }
-    
+    // Return actual user goals only, no hardcoded defaults
     return trendingTopics.take(5).toList();
   }
 

@@ -50,8 +50,9 @@ dependencies:
   google_fonts: ^6.2.1
   
   # Audio playback
-  audioplayers: ^6.1.0
-  just_audio: ^0.9.40
+  # Audio and media
+  audioplayers: ^6.2.0
+  just_audio: ^0.10.4
   
   # Local storage
   shared_preferences: ^2.3.2
@@ -71,7 +72,8 @@ dependencies:
   connectivity_plus: ^6.0.5
   
   # Charts for analytics
-  fl_chart: ^0.68.0
+  # Charts and visualization
+  fl_chart: ^0.69.0
   
   # Google Sign In
   google_sign_in: ^6.2.1

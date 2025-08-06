@@ -139,6 +139,15 @@ class _AppShellState extends State<AppShell> {
                   ),
                   const Divider(color: Colors.white24),
                   _buildDrawerItem(
+                    icon: Icons.bug_report,
+                    title: 'Debug Profile',
+                    subtitle: 'Profile debugging info',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/debug_profile');
+                    },
+                  ),
+                  _buildDrawerItem(
                     icon: Icons.settings,
                     title: 'Settings',
                     subtitle: 'App preferences',

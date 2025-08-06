@@ -125,6 +125,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       floating: true,
       pinned: false,
       backgroundColor: Colors.transparent,
+      automaticallyImplyLeading: false, // Remove back button
       flexibleSpace: FlexibleSpaceBar(
         background: ClipRRect(
           borderRadius: const BorderRadius.only(

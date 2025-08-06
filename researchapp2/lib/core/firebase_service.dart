@@ -566,17 +566,8 @@ class FirebaseService {
   }
 
   static Map<String, double> _calculateMonthlyRevenue() {
-    // Simulated revenue data - replace with actual revenue calculations
-    final now = DateTime.now();
-    Map<String, double> revenue = {};
-    
-    for (int i = 5; i >= 0; i--) {
-      final date = DateTime(now.year, now.month - i, 1);
-      final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-      revenue[monthKey] = (1000 + (i * 500) + (date.hashCode % 1000)).toDouble();
-    }
-    
-    return revenue;
+    // Return empty revenue data - no hardcoded simulation
+    return <String, double>{};
   }
 
   static Map<String, int> _calculateUserGrowth(List<QueryDocumentSnapshot> users) {

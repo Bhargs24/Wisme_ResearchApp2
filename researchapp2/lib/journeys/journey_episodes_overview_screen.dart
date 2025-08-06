@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/journey_models.dart';
@@ -29,6 +30,10 @@ class _JourneyEpisodesOverviewScreenState extends State<JourneyEpisodesOverviewS
   
   List<Episode> _episodes = [];
   bool _isLoading = true;
+  
+  // Track real episode durations as they're loaded
+  Map<String, Duration> _realDurations = {};
+  Map<String, bool> _durationsLoading = {};
 
   @override
   void initState() {
@@ -58,11 +63,64 @@ class _JourneyEpisodesOverviewScreenState extends State<JourneyEpisodesOverviewS
         _episodes = episodes;
         _isLoading = false;
       });
+      
+      // Start loading real durations for each episode
+      _loadRealDurations();
     } catch (e) {
       print('Error loading episodes: $e');
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  void _loadRealDurations() {
+    // Load real durations asynchronously for each episode
+    for (final episode in _episodes) {
+      _loadEpisodeDuration(episode);
+    }
+  }
+
+  void _loadEpisodeDuration(Episode episode) async {
+    if (_durationsLoading[episode.id] == true) return; // Already loading
+    
+    setState(() {
+      _durationsLoading[episode.id] = true;
+    });
+
+    try {
+      // Use a temporary audio player to get the real duration
+      final tempPlayer = AudioPlayer();
+      await tempPlayer.setAsset(episode.audioUrl);
+      
+      // Listen for duration to be available
+      Duration? duration;
+      final subscription = tempPlayer.durationStream.listen((d) {
+        if (d != null) {
+          duration = d;
+        }
+      });
+      
+      // Wait a bit for the duration to load
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (duration != null && mounted) {
+        setState(() {
+          _realDurations[episode.id] = duration!;
+          _durationsLoading[episode.id] = false;
+        });
+      }
+      
+      // Clean up
+      await subscription.cancel();
+      await tempPlayer.dispose();
+    } catch (e) {
+      print('Error loading duration for episode ${episode.id}: $e');
+      if (mounted) {
+        setState(() {
+          _durationsLoading[episode.id] = false;
+        });
+      }
     }
   }
 
@@ -134,6 +192,22 @@ class _JourneyEpisodesOverviewScreenState extends State<JourneyEpisodesOverviewS
     return '${minutes}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  String _getDisplayDuration(Episode episode) {
+    // Check if we have the real duration loaded
+    final realDuration = _realDurations[episode.id];
+    if (realDuration != null) {
+      return _formatDuration(realDuration.inSeconds);
+    }
+    
+    // Check if we're currently loading the duration
+    if (_durationsLoading[episode.id] == true) {
+      return 'Loading...';
+    }
+    
+    // Fallback to placeholder duration with indicator
+    return '~${_formatDuration(episode.duration)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final journeyColor = _getJourneyColor();
@@ -143,185 +217,179 @@ class _JourneyEpisodesOverviewScreenState extends State<JourneyEpisodesOverviewS
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    // Back button
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.hoverLight,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.arrow_back, color: Colors.white),
-                          ),
-                        ),
-                        const Spacer(),
-                        // Personalization indicator
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: journeyColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: journeyColor.withOpacity(0.4),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.auto_awesome, color: journeyColor, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Personalized',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: journeyColor,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Journey header
-                    Row(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: journeyColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(
-                            _getJourneyIcon(),
-                            color: journeyColor,
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.journey.title,
-                                style: AppTextStyles.heading1.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      _getLevelDisplayText(),
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '${_getLengthDisplayText()} episodes',
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Journey description
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBackground.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: journeyColor.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          child: CustomScrollView(
+            slivers: [
+              // Header section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      // Back button
+                      Row(
                         children: [
-                          Text(
-                            'About This Journey',
-                            style: AppTextStyles.heading2.copyWith(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.journey.description,
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: Colors.white70,
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Icon(Icons.schedule, color: journeyColor, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${_episodes.length} episodes • ~${(widget.journey.totalDuration / 60).round()} minutes total',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: journeyColor,
-                                  fontSize: 13,
-                                ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.hoverLight,
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            ],
+                              child: const Icon(Icons.arrow_back, color: Colors.white),
+                            ),
+                          ),
+                          const Spacer(),
+                          // Personalization indicator
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: journeyColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: journeyColor.withOpacity(0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.auto_awesome, color: journeyColor, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Personalized',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: journeyColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Episodes list
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Journey header
+                      Row(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: journeyColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              _getJourneyIcon(),
+                              color: journeyColor,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.journey.title,
+                                  style: AppTextStyles.heading1.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        _getLevelDisplayText(),
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: Colors.white70,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${_getLengthDisplayText()} episodes',
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: Colors.white70,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Journey description
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: journeyColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'About This Journey',
+                              style: AppTextStyles.heading2.copyWith(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.journey.description,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                color: Colors.white70,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Icon(Icons.schedule, color: journeyColor, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${_episodes.length} episodes • ~${(widget.journey.totalDuration / 60).round()} minutes total',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: journeyColor,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Episodes header
                       Row(
                         children: [
                           Text(
@@ -345,144 +413,154 @@ class _JourneyEpisodesOverviewScreenState extends State<JourneyEpisodesOverviewS
                           ),
                         ],
                       ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Episodes list
-                      Expanded(
-                        child: _isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : ListView.builder(
-                                itemCount: _episodes.length,
-                                itemBuilder: (context, index) {
-                                  final episode = _episodes[index];
-                                  
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    child: GestureDetector(
-                                      onTap: () => _playSpecificEpisode(episode),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.cardBackground,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Colors.white.withOpacity(0.1),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            // Episode number
-                                            Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color: journeyColor.withOpacity(0.2),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  '${episode.order}',
-                                                  style: AppTextStyles.heading2.copyWith(
-                                                    color: journeyColor,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            
-                                            const SizedBox(width: 16),
-                                            
-                                            // Episode details
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    episode.title,
-                                                    style: AppTextStyles.heading2.copyWith(
-                                                      color: Colors.white,
-                                                      fontSize: 15,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    episode.description,
-                                                    style: AppTextStyles.caption.copyWith(
-                                                      color: Colors.white70,
-                                                      height: 1.3,
-                                                    ),
-                                                    maxLines: 2,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    _formatDuration(episode.duration),
-                                                    style: AppTextStyles.caption.copyWith(
-                                                      color: journeyColor,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            
-                                            // Play button
-                                            Container(
-                                              width: 36,
-                                              height: 36,
-                                              decoration: BoxDecoration(
-                                                color: journeyColor.withOpacity(0.2),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.play_arrow,
-                                                color: journeyColor,
-                                                size: 20,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
                     ],
                   ),
                 ),
               ),
               
-              // Bottom action button
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _startJourney,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: journeyColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+              // Episodes list
+              _isLoading
+                ? const SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(50.0),
+                        child: CircularProgressIndicator(),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.play_arrow, color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Start Learning Journey',
-                          style: AppTextStyles.heading2.copyWith(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
+                  )
+                : SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final episode = _episodes[index];
+                          
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: GestureDetector(
+                              onTap: () => _playSpecificEpisode(episode),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.cardBackground,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.1),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Episode number
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: journeyColor.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${episode.order}',
+                                          style: AppTextStyles.heading2.copyWith(
+                                            color: journeyColor,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    
+                                    const SizedBox(width: 16),
+                                    
+                                    // Episode details
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            episode.title,
+                                            style: AppTextStyles.heading2.copyWith(
+                                              color: Colors.white,
+                                              fontSize: 15,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            episode.description,
+                                            style: AppTextStyles.caption.copyWith(
+                                              color: Colors.white70,
+                                              height: 1.3,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _getDisplayDuration(episode),
+                                            style: AppTextStyles.caption.copyWith(
+                                              color: journeyColor,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    
+                                    // Play button
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: journeyColor.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.play_arrow,
+                                        color: journeyColor,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: _episodes.length,
+                      ),
+                    ),
+                  ),
+              
+              // Bottom action button
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _startJourney,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: journeyColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Start Learning Journey',
+                            style: AppTextStyles.heading2.copyWith(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

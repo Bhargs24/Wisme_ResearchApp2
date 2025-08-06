@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../core/firebase_service.dart';
+import '../widgets/standard_cards.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -229,7 +230,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
         
         weeks.add({
           'label': 'Week ${4 - i}',
-          'value': (uniqueUsers.length * 20).clamp(0, 100), // Scale to percentage
+          'value': uniqueUsers.length, // Use actual user count
         });
       }
       
@@ -450,56 +451,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   Widget _buildOverviewCards() {
     return Row(
       children: [
-        Expanded(child: _buildMetricCard('Users', '${_dashboardData['totalUsers'] ?? 0}', Icons.people_outline)),
+        Expanded(child: MetricCard(title: 'Users', value: '${_dashboardData['totalUsers'] ?? 0}', icon: Icons.people_outline)),
         const SizedBox(width: 16),
-        Expanded(child: _buildMetricCard('Feedback', '${_dashboardData['totalFeedback'] ?? 0}', Icons.feedback_outlined)),
+        Expanded(child: MetricCard(title: 'Feedback', value: '${_dashboardData['totalFeedback'] ?? 0}', icon: Icons.feedback_outlined)),
         const SizedBox(width: 16),
-        Expanded(child: _buildMetricCard('Activities', '${_dashboardData['totalActivities'] ?? 0}', Icons.analytics_outlined)),
+        Expanded(child: MetricCard(title: 'Activities', value: '${_dashboardData['totalActivities'] ?? 0}', icon: Icons.analytics_outlined)),
       ],
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCard,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Colors.white70, size: 20),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: AppTextStyles.heading1.copyWith(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            title,
-            style: AppTextStyles.caption.copyWith(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEngagementChart() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCard,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
+    return StandardCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -532,13 +494,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   }
 
   Widget _buildRetentionChart() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCard,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
+    return StandardCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -568,13 +524,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   }
 
   Widget _buildUserDemographics() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCard,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
+    return StandardCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -604,20 +554,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   }
 
   Widget _buildDataQualityMetrics() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.orange.withValues(alpha: 0.1),
-            Colors.orange.withValues(alpha: 0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-      ),
+    return AccentCard(
+      accentColor: Colors.orange,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -669,20 +607,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen>
   }
 
   Widget _buildRevenueProjections() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primaryBlue.withValues(alpha: 0.1),
-            AppColors.accentGreen.withValues(alpha: 0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
-      ),
+    return AccentCard(
+      accentColor: AppColors.accentGreen,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

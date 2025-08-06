@@ -4,8 +4,10 @@ import '../theme/app_text_styles.dart';
 import '../models/journey_models.dart';
 import '../core/research_metrics_provider.dart';
 import '../services/audio_manifest_service.dart';
+import '../services/progress_persistence_service.dart';
 import '../core/firebase_service.dart';
 import 'journey_level_assessment_screen.dart';
+import 'journey_episodes_overview_screen.dart';
 import 'package:provider/provider.dart';
 
 class JourneySelectionScreen extends StatefulWidget {
@@ -70,14 +72,37 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
     }
   }
 
-  void _onJourneySelected(Journey journey) {
-    // Navigate to journey level assessment (start of personalization flow)
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => JourneyLevelAssessmentScreen(journey: journey),
-      ),
-    );
+  void _onJourneySelected(Journey journey) async {
+    // Check if user has saved personalization preferences for THIS specific journey
+    final savedPreferences = await ProgressPersistenceService.getPersonalizationPreferences();
+    
+    if (savedPreferences != null && savedPreferences['journeyId'] == journey.id) {
+      // User has saved preferences for this journey, go directly to episodes overview
+      final selectedLevel = savedPreferences['selectedLevel'] as String;
+      final selectedLength = savedPreferences['selectedLength'] as String;
+      
+      print('✅ Using saved preferences for ${journey.title}: $selectedLevel, $selectedLength');
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => JourneyEpisodesOverviewScreen(
+            journey: journey,
+            selectedLevel: selectedLevel,
+            selectedLength: selectedLength,
+          ),
+        ),
+      );
+    } else {
+      // No saved preferences for this journey, navigate to level assessment
+      print('🔄 No saved preferences for ${journey.title}, showing level assessment');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => JourneyLevelAssessmentScreen(journey: journey),
+        ),
+      );
+    }
   }
 
   @override
@@ -613,19 +638,6 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Icon(Icons.access_time, size: 14, color: Colors.white70),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${journey.episodeIds.length} episodes',
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
                           ),

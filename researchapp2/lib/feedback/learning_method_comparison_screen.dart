@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../core/research_metrics_provider.dart';
 import '../core/firebase_service.dart';
+import '../widgets/standard_cards.dart';
 
 class LearningMethodComparisonScreen extends StatefulWidget {
   const LearningMethodComparisonScreen({super.key});
@@ -88,20 +89,15 @@ class _LearningMethodComparisonScreenState extends State<LearningMethodCompariso
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        Text('Conversational vs Traditional Learning', 
-                             style: AppTextStyles.heading1.copyWith(fontSize: 24)),
-                        const SizedBox(height: 8),
-                        Text('Help us understand how conversational learning compares to your previous learning methods', 
-                             style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
-                      ],
-                    ),
+                StandardCard(
+                  child: Column(
+                    children: [
+                      Text('Conversational vs Traditional Learning', 
+                           style: AppTextStyles.heading1.copyWith(fontSize: 24)),
+                      const SizedBox(height: 8),
+                      Text('Help us understand how conversational learning compares to your previous learning methods', 
+                           style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -130,27 +126,22 @@ class _LearningMethodComparisonScreenState extends State<LearningMethodCompariso
                   ['Strongly prefer traditional', 'Prefer traditional', 'No preference', 'Prefer conversational', 'Strongly prefer conversational']
                 ),
                 const SizedBox(height: 24),
-                Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Additional Thoughts (Optional)', 
-                             style: AppTextStyles.heading2.copyWith(fontSize: 18)),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            hintText: 'Any other thoughts about conversational vs traditional learning methods?',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (value) => setState(() => _additionalFeedback = value),
+                StandardCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Additional Thoughts (Optional)', 
+                           style: AppTextStyles.heading2.copyWith(fontSize: 18)),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          hintText: 'Any other thoughts about conversational vs traditional learning methods?',
+                          border: OutlineInputBorder(),
                         ),
-                      ],
-                    ),
+                        onChanged: (value) => setState(() => _additionalFeedback = value),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 32),

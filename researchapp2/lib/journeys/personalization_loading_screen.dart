@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/journey_models.dart';
+import '../services/progress_persistence_service.dart';
 import 'journey_episodes_overview_screen.dart';
 
 class PersonalizationLoadingScreen extends StatefulWidget {
@@ -101,6 +102,9 @@ class _PersonalizationLoadingScreenState extends State<PersonalizationLoadingScr
     _pulseController.repeat(reverse: true);
     _progressController.forward();
     
+    // Save personalization preferences for persistence
+    await _savePersonalizationPreferences();
+    
     // Simulate loading steps
     for (int i = 0; i < _loadingSteps.length; i++) {
       setState(() {
@@ -124,6 +128,19 @@ class _PersonalizationLoadingScreenState extends State<PersonalizationLoadingScr
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _savePersonalizationPreferences() async {
+    try {
+      await ProgressPersistenceService.savePersonalizationPreferences(
+        selectedLevel: widget.selectedLevel,
+        selectedLength: widget.selectedLength,
+        journeyId: widget.journey.id,
+        timestamp: DateTime.now(),
+      );
+    } catch (e) {
+      print('Error saving personalization preferences: $e');
     }
   }
 

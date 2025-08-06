@@ -16,6 +16,7 @@ class ProgressPersistenceService {
   static const String _completedEpisodesKey = '${_keyPrefix}completed_episodes';
   static const String _lastPlayedKey = '${_keyPrefix}last_played';
   static const String _lastSyncKey = '${_keyPrefix}last_sync';
+  static const String _personalizationKey = '${_keyPrefix}personalization_preferences';
   
   // SharedPreferences instance for persistent storage
   static SharedPreferences? _prefs;
@@ -389,10 +390,26 @@ class ProgressPersistenceService {
     // Fire and forget sync to prevent blocking UI
     () async {
       try {
+        // Check if user is authenticated before syncing
+        final user = FirebaseService.auth.currentUser;
+        if (user == null) {
+          debugPrint('❌ Background sync skipped: No authenticated user');
+          return;
+        }
+        
+        // Include user ID in the data and use user-scoped document path
+        final progressData = {
+          ...data,
+          'userId': user.uid,
+          'episodeId': episodeId,
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        
         await FirebaseService.firestore
             .collection('episode_progress')
-            .doc(episodeId)
-            .set(data, SetOptions(merge: true));
+            .doc('${user.uid}_$episodeId')
+            .set(progressData, SetOptions(merge: true));
+        debugPrint('✅ Background sync successful: $episodeId for user ${user.uid}');
       } catch (e) {
         debugPrint('❌ Background sync failed: $e');
       }
@@ -404,13 +421,26 @@ class ProgressPersistenceService {
     // Fire and forget sync to prevent blocking UI
     () async {
       try {
+        // Check if user is authenticated before syncing
+        final user = FirebaseService.auth.currentUser;
+        if (user == null) {
+          debugPrint('❌ Background completion sync skipped: No authenticated user');
+          return;
+        }
+        
+        // Include user ID and use proper document structure
+        final completionData = {
+          'userId': user.uid,
+          'episodeId': episodeId,
+          'completedAt': FieldValue.serverTimestamp(),
+          ...data,
+        };
+        
         await FirebaseService.firestore
             .collection('episode_completions')
-            .add({
-          'episodeId': episodeId,
-          'completedAt': DateTime.now().toIso8601String(),
-          ...data,
-        });
+            .doc('${user.uid}_${episodeId}_${DateTime.now().millisecondsSinceEpoch}')
+            .set(completionData);
+        debugPrint('✅ Background completion sync successful: $episodeId for user ${user.uid}');
       } catch (e) {
         debugPrint('❌ Background completion sync failed: $e');
       }
@@ -436,6 +466,57 @@ class ProgressPersistenceService {
       debugPrint('✅ Third episode feedback marked as shown');
     } catch (e) {
       debugPrint('❌ Error marking third episode feedback as shown: $e');
+    }
+  }
+
+  /// Save personalization preferences for persistence
+  static Future<void> savePersonalizationPreferences({
+    required String selectedLevel,
+    required String selectedLength,
+    required String journeyId,
+    required DateTime timestamp,
+  }) async {
+    try {
+      if (!_isInitialized) await initialize();
+      
+      final preferencesData = {
+        'selectedLevel': selectedLevel,
+        'selectedLength': selectedLength,
+        'journeyId': journeyId,
+        'timestamp': timestamp.toIso8601String(),
+      };
+      
+      await _prefs?.setString(_personalizationKey, jsonEncode(preferencesData));
+      debugPrint('✅ Saved personalization preferences: Level=$selectedLevel, Length=$selectedLength');
+    } catch (e) {
+      debugPrint('❌ Failed to save personalization preferences: $e');
+    }
+  }
+
+  /// Get saved personalization preferences
+  static Future<Map<String, dynamic>?> getPersonalizationPreferences() async {
+    try {
+      if (!_isInitialized) await initialize();
+      
+      final preferencesJson = _prefs?.getString(_personalizationKey);
+      if (preferencesJson != null) {
+        return Map<String, dynamic>.from(jsonDecode(preferencesJson));
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get personalization preferences: $e');
+      return null;
+    }
+  }
+
+  /// Clear personalization preferences (for reset/logout)
+  static Future<void> clearPersonalizationPreferences() async {
+    try {
+      if (!_isInitialized) await initialize();
+      await _prefs?.remove(_personalizationKey);
+      debugPrint('✅ Cleared personalization preferences');
+    } catch (e) {
+      debugPrint('❌ Failed to clear personalization preferences: $e');
     }
   }
 }
