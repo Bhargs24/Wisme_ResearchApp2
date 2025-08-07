@@ -21,7 +21,10 @@ class FeedbackNavigationScreen extends StatelessWidget {
         final completionPercentage = (completedJourneys / totalJourneys * 100).round();
         
         return Scaffold(
-          appBar: AppBar(title: const Text('Feedback & Surveys')),
+          appBar: AppBar(
+            automaticallyImplyLeading: false, // Remove back button
+            title: const Text('Feedback & Surveys'),
+          ),
           body: Stack(
             children: [
               SingleChildScrollView(

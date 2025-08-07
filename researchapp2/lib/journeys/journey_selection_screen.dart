@@ -113,20 +113,22 @@ class _JourneySelectionScreenState extends State<JourneySelectionScreen>
           slivers: [
             // Modern app bar
             SliverAppBar(
+              automaticallyImplyLeading: false, // Remove default back button
               expandedHeight: 120,
               floating: false,
               pinned: true,
               backgroundColor: AppColors.backgroundDark,
-              leading: Builder(
-                builder: (context) => IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.hoverLight,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
+              leading: IconButton(
+                onPressed: () {
+                  // Navigate specifically to home screen, not generic back navigation
+                  Navigator.pushReplacementNamed(context, '/app');
+                },
+                icon: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.hoverLight,
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
               ),
               flexibleSpace: FlexibleSpaceBar(

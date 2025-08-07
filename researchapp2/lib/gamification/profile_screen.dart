@@ -27,6 +27,7 @@ class ProfileScreen extends StatelessWidget {
     final level = (xp ~/ 1000) + 1;
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false, // Remove back button
         title: const Text('Profile'),
         actions: [
           IconButton(
